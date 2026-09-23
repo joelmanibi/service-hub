@@ -1,0 +1,174 @@
+/* Point d'entrée styles de l'application.
+   Design System : Boosted (Orange) exclusivement — ne jamais ajouter
+   Tailwind, Material UI, Chakra UI ou shadcn ici. */
+@import "boosted/dist/css/boosted.min.css";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+/**
+ * Thème ServiceHub — complète Boosted, ne le remplace jamais.
+ * Principe : ne redéfinir que ce que Boosted laisse volontairement vide
+ * (ombres) ou expose comme point d'extension (variables --bs-*), et
+ * documenter explicitement les choix du Design System Orange qu'on
+ * respecte sans y toucher (liens, formulaires, boutons).
+ */
+:root {
+  /* ---------------------------------------------------------------
+   * 1. Couleurs
+   * Orange principal = brand orange officiel (#FF7900), pour grandes
+   * surfaces/décoratif. Boosted utilise volontairement un orange plus
+   * foncé (#F16E00, --bs-primary) pour le texte/liens/boutons afin de
+   * garantir le contraste AA sur fond blanc — on ne touche pas à cette
+   * distinction, elle est correcte et intentionnelle.
+   * Noir/Blanc/Gris clair réutilisent directement les tokens Boosted.
+   * ------------------------------------------------------------- */
+  --sh-orange: #ff7900;
+  --sh-black: var(--bs-black);
+  --sh-white: var(--bs-white);
+  --sh-gray-light: var(--bs-gray-200);
+
+  /* ---------------------------------------------------------------
+   * 2. Espacements
+   * Échelle complémentaire aux utilitaires Bootstrap (p-*, m-*, gap-*),
+   * pour le CSS custom des composants applicatifs (cartes, sections)
+   * qui ne passe pas par les classes utilitaires.
+   * ------------------------------------------------------------- */
+  --sh-space-xs: 0.25rem;
+  --sh-space-sm: 0.5rem;
+  --sh-space-md: 1rem;
+  --sh-space-lg: 1.5rem;
+  --sh-space-xl: 2.5rem;
+
+  /* ---------------------------------------------------------------
+   * 3. Rayons
+   * Alias sémantiques de l'échelle Boosted existante — aucune valeur
+   * modifiée, pour ne pas casser le style "plat" du Design System.
+   * ------------------------------------------------------------- */
+  --sh-radius-sm: var(--bs-border-radius-sm);
+  --sh-radius-md: var(--bs-border-radius);
+  --sh-radius-lg: var(--bs-border-radius-lg);
+
+  /* ---------------------------------------------------------------
+   * 4. Ombres
+   * Boosted expose --bs-box-shadow(-sm|-lg) et --bs-card-box-shadow
+   * mais les laisse vides par défaut (Design System volontairement
+   * plat). On leur donne ici des valeurs sobres et discrètes, pour que
+   * les utilitaires .shadow/.shadow-sm/.shadow-lg et les cartes avec
+   * élévation fonctionnent réellement quand on choisit de les utiliser
+   * — sans jamais les appliquer par défaut aux composants Boosted.
+   * ------------------------------------------------------------- */
+  --bs-box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08);
+  --bs-box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  --bs-box-shadow-lg: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
+  --bs-card-box-shadow: var(--bs-box-shadow-sm);
+
+  --sh-shadow-sm: var(--bs-box-shadow-sm);
+  --sh-shadow-md: var(--bs-box-shadow);
+  --sh-shadow-lg: var(--bs-box-shadow-lg);
+
+  /* ---------------------------------------------------------------
+   * 5. Typographie
+   * La police (HelvNeueOrange / Helvetica Neue / Arial) et l'échelle
+   * typographique sont déjà définies par Boosted (--bs-font-sans-serif,
+   * --bs-body-*, .h1..h6) — non modifiées. Alias exposé pour le CSS
+   * custom des composants applicatifs.
+   * ------------------------------------------------------------- */
+  --sh-font-family-base: var(--bs-font-sans-serif);
+
+  /* ---------------------------------------------------------------
+   * 6. Liens
+   * Déjà conformes à l'Orange Web Guidelines par défaut (Boosted) :
+   * texte noir souligné, orange (#F16E00, accessible) au survol.
+   * Repris explicitement ici pour figer le choix, sans le changer.
+   * ------------------------------------------------------------- */
+  --bs-link-color: var(--sh-black);
+  --bs-link-hover-color: var(--bs-primary);
+
+  /* ---------------------------------------------------------------
+   * 7. Cartes
+   * Rayon/bordure hérités de Boosted (--bs-card-border-radius,
+   * --bs-card-border-color) ; seule l'ombre (vide par défaut) est
+   * complétée au point 4 ci-dessus.
+   * ------------------------------------------------------------- */
+}
+
+/* Boosted réutilise volontairement les tokens de surbrillance
+   (--bs-highlight-bg/-color, pensés pour <mark>) pour l'entête de
+   carte : fond noir, texte blanc par défaut. --bs-card-cap-color est
+   redéfini par .card lui-même (pas seulement au :root), donc on doit
+   le réaligner ici, sur .card, pour que ça s'applique réellement.
+   Toutes les cartes de l'application forcent .card-header en
+   bg-white (Design System Orange, cartes blanches) : sans ce
+   réalignement le texte d'entête (blanc) devient invisible. */
+.card {
+  --bs-card-cap-color: var(--bs-body-color);
+}
+
+/* ---------------------------------------------------------------
+ * 8. Formulaires & Boutons
+ * Boosted impose volontairement des champs carrés (border-radius: 0)
+ * et un anneau de focus noir/blanc à double contraste (accessibilité
+ * maximale, indépendante de la couleur du composant) : non modifié.
+ * .btn-primary utilise déjà l'orange de marque pur (#FF7900) sur fond,
+ * texte noir — combinaison déjà conforme et déjà accessible.
+ * ------------------------------------------------------------- */
+
+body {
+  min-height: 100vh;
+}
+
+/* ---------------------------------------------------------------
+ * 9. Animation d'entrée
+ * Légère apparition (fondu + translation) utilisée pour les sections
+ * qui se chargent en asynchrone (ex : Dashboard), afin d'éviter un
+ * "pop" brutal du contenu. Purement décoratif, désactivé si
+ * l'utilisateur préfère un mouvement réduit.
+ * ------------------------------------------------------------- */
+@keyframes sh-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sh-rise-in {
+  animation: sh-rise-in 0.45s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-rise-in {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------
+ * 10. Impression de fiches
+ * Marqueur générique (.sh-print-sheet) posé sur le contenu à imprimer
+ * (ex : fiche détail d'instance). Le composant ajoute la classe
+ * .sh-printing sur <body> juste avant window.print() (et la retire au
+ * afterprint) : le reste de la page (topbar, sidebar, chrome du modal,
+ * backdrop) est masqué, seule la fiche s'imprime, remise à plat en
+ * page normale. Portée par cette classe pour ne jamais affecter une
+ * impression classique (Ctrl+P) d'une autre page de l'application.
+ * ------------------------------------------------------------- */
+@media print {
+  body.sh-printing * {
+    visibility: hidden;
+  }
+
+  body.sh-printing .sh-print-sheet,
+  body.sh-printing .sh-print-sheet * {
+    visibility: visible;
+  }
+
+  body.sh-printing .sh-print-sheet {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--sh-white);
+  }
+}

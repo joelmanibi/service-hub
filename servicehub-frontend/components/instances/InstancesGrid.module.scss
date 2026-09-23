@@ -1,0 +1,17 @@
+/* Effet hover discret : légère élévation, cohérent avec StatCard. */
+.instanceCard {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.instanceCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-shadow-md);
+}
+
+.metaIcon {
+  width: 1rem;
+  flex: 0 0 auto;
+  text-align: center;
+}

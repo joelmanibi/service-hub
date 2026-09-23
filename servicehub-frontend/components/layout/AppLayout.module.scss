@@ -1,0 +1,19 @@
+.shell {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  /* Empêche le contenu (tableaux, texte long) de forcer un débordement
+     horizontal de la zone centrale. */
+  min-width: 0;
+}
+
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+}

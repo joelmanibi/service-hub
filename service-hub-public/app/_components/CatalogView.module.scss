@@ -1,0 +1,83 @@
+/* Largeur fixe (250-270px) plutôt qu'une fraction de la grille Bootstrap :
+   donne un rail de filtres de largeur stable quelle que soit la largeur
+   d'écran desktop, au lieu d'un col-3 qui s'élargit sur les grands
+   moniteurs. */
+.sidebar {
+  width: 264px;
+  flex: 0 0 264px;
+  /* `.sticky-top` (Bootstrap) pose z-index:1020, identique à `.header`
+     (Header.module.scss) — à égalité, l'élément le plus bas dans le DOM
+     (la sidebar, rendue après le header) passait au-dessus au scroll.
+     Valeur strictement inférieure pour que le header reste toujours au
+     premier plan. */
+  z-index: 1010;
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Titre de page ≈ 32px — premier palier de la hiérarchie typographique
+   (32 / 18 / 16 / 14). */
+.pageTitle {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.searchGroup {
+  isolation: isolate;
+}
+
+.searchInput {
+  font-size: 1.05rem;
+  /* Réserve la place du badge Ctrl+K pour que le texte tapé ne passe pas dessous. */
+  padding-right: 4.5rem;
+}
+
+/* Badge purement décoratif (aucun raccourci clavier réel câblé). */
+.shortcutHint {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  background-color: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.35rem;
+  pointer-events: none;
+}
+
+/* Grille réellement responsive : le nombre de colonnes découle de la
+   largeur disponible (pas de palier fixe "4 colonnes à partir de xl") —
+   se stabilise naturellement à ~1 colonne en mobile, ~2 en tablette et
+   ~4 en desktop selon la largeur réelle du contenu principal. */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Tiroir de filtres mobile/tablette (<lg) : overlay + panneau, sans
+   dépendre du JS de Boosted (offcanvas) — même approche que
+   FilterSection, piloté par l'état React de CatalogView. */
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.35);
+  z-index: 1040;
+}
+
+.drawerPanel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(320px, 85vw);
+  overflow-y: auto;
+  z-index: 1041;
+  /* Ombre moyenne (pas "lg") — cohérent avec la consigne "pas de grosses
+     ombres" appliquée à toute l'interface, y compris ce panneau. */
+  box-shadow: var(--bs-box-shadow);
+}

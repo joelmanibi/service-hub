@@ -1,0 +1,11 @@
+/* `.btn` sans variant `.btn-{color}` n'a pas de traitement hover/focus
+   défini par Bootstrap — état ajouté explicitement pour un retour visuel
+   clair sur ces puces interactives (suppression d'un filtre). */
+.chip {
+  transition: background-color 0.15s ease;
+}
+
+.chip:hover,
+.chip:focus-visible {
+  background-color: var(--bs-secondary-bg);
+}

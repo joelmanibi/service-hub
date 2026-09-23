@@ -1,0 +1,41 @@
+/* Barre d'étapes du formulaire d'instance — cercles numérotés reliés par
+   un trait, construits en CSS (Boosted n'a pas de composant "stepper").
+   Le trait est un pseudo-élément flexible (::after) qui comble l'espace
+   entre le libellé d'une étape et le cercle suivant. */
+.stepper {
+  gap: 0;
+}
+
+.step {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.stepWithConnector::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background-color: var(--bs-border-color-subtle);
+  margin: 0 var(--sh-space-sm);
+}
+
+.stepCircle {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.875rem;
+}
+
+.stepLabel {
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .stepLabel {
+    display: none;
+  }
+}
+
+.architectureImagePreview img {
+  max-height: 16rem;
+  object-fit: contain;
+}

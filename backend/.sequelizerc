@@ -1,0 +1,16 @@
+const path = require('path');
+
+/**
+ * Configuration de sequelize-cli.
+ * Responsabilité : indiquer à la CLI les chemins non standards utilisés
+ * par ce projet (config CLI, migrations, seeders). Le projet ne passe
+ * pas par `model:generate` (les modèles sont écrits à la main dans
+ * chaque module), `models-path` pointe donc simplement vers database/.
+ */
+
+module.exports = {
+  config: path.resolve('src', 'database', 'config.js'),
+  'models-path': path.resolve('src', 'database'),
+  'migrations-path': path.resolve('src', 'database', 'migrations'),
+  'seeders-path': path.resolve('src', 'database', 'seeders'),
+};

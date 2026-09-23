@@ -1,0 +1,9 @@
+/* Expose la hauteur de la Topbar en variable globale, consommée par
+   Sidebar.module.scss pour décaler le tiroir mobile sous la barre. */
+:global(:root) {
+  --sh-topbar-height: 4rem;
+}
+
+.topbar {
+  height: var(--sh-topbar-height);
+}

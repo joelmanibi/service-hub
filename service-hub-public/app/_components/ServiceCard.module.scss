@@ -1,0 +1,43 @@
+/* Bootstrap n'a pas d'utilitaire de troncature multi-lignes : nécessaire
+   pour garder des cartes de hauteur homogène quelle que soit la longueur
+   de la description. 2 lignes (plutôt que 3) pour réduire la hauteur de
+   la carte (densité). */
+.description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Logo du service (facultatif, service.logoUrl) — jamais inventé,
+   absent du rendu si le service n'en a pas. */
+.logo {
+  width: 2.75rem;
+  height: 2.75rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Repli initiales quand il n'y a pas de logo — mêmes dimensions que
+   `.logo` (via la classe combinée) pour ne pas décaler la ligne. */
+.avatar {
+  font-size: 0.95rem;
+}
+
+/* Titre carte ≈ 17px : entre le corps de texte (14-16px) et le titre de
+   page (32px) — hiérarchie à 4 paliers maximum sur la page catalogue. */
+.cardTitle {
+  font-size: 1.0625rem;
+  line-height: 1.3;
+}
+
+/* Carte cliquable (lien étiré via .stretched-link sur le titre) — léger
+   effet de survol pour signaler l'interactivité, sans translation ni
+   ombre marquée (portail d'entreprise sobre). */
+.card {
+  transition: box-shadow 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: var(--bs-box-shadow) !important;
+}

@@ -1,0 +1,21 @@
+/* Effet hover discret : légère élévation, pas de translation agressive. */
+.statCard {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-shadow-md);
+}
+
+.label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+}

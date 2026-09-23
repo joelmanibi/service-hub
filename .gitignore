@@ -1,0 +1,51 @@
+# .gitignore racine — couvre les trois applications du monorepo :
+# backend/, servicehub-frontend/, service-hub-public/
+# (les motifs sans "/" au début s'appliquent à n'importe quelle
+# profondeur, donc une seule règle couvre les trois apps à la fois)
+
+# Dépendances
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js (servicehub-frontend/, service-hub-public/)
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Variables d'environnement (backend/, servicehub-frontend/, service-hub-public/)
+.env
+.env.*
+!.env.example
+
+# Logs (le dossier backend/logs/ lui-même reste versionné via .gitkeep,
+# seuls les fichiers .log générés à l'exécution sont ignorés)
+backend/logs/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Fichiers téléversés côté backend (contenu généré à l'exécution, jamais
+# versionné — seul le dossier est conservé via .gitkeep)
+backend/src/uploads/*
+!backend/src/uploads/.gitkeep
+
+# Tests
+coverage/
+
+# Déploiement
+.vercel
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.pem

@@ -1,0 +1,30 @@
+/* Sous le breakpoint lg, Boosted positionne l'offcanvas en
+   position: fixed; top: 0 (règle .offcanvas-lg.offcanvas-start, deux
+   classes) — ce qui le fait démarrer au-dessus de la Topbar
+   (fixed-top) au lieu de juste en dessous. On décale son sommet de la
+   hauteur de la Topbar ; sa hauteur reste correcte car Boosted fixe
+   aussi bottom: 0. Sélecteur combiné pour égaler/dépasser la
+   spécificité de la règle Boosted à contourner. Sans effet en
+   desktop, où la sidebar est en position: static. */
+:global(.offcanvas-lg.offcanvas-start).sidebar {
+  top: var(--sh-topbar-height, 4rem);
+}
+
+/* Le repli (icônes seules) ne s'applique qu'à partir du breakpoint lg
+   de Boosted (1024px) : en dessous, .offcanvas-lg gère déjà seul
+   l'affichage plein écran de la sidebar, toujours avec ses libellés. */
+@media (min-width: 1024px) {
+  .sidebar {
+    width: 16rem;
+    transition: width 0.2s ease;
+  }
+
+  .sidebarCollapsed {
+    /* 4.5rem × 1.5 */
+    width: 6.75rem;
+  }
+
+  .sidebarCollapsed .navLabel {
+    display: none;
+  }
+}

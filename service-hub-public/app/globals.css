@@ -1,0 +1,29 @@
+/* Point d'entrée styles de l'application.
+   Design System : Boosted (Orange) exclusivement — cohérent avec
+   servicehub-frontend (application interne), aucune autre librairie CSS. */
+@import "boosted/dist/css/boosted.min.css";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+/**
+ * Thème ServiceHub Public — complète Boosted, ne le remplace jamais.
+ * Ne redéfinit que ce que Boosted laisse volontairement vide (ombres),
+ * à l'identique de servicehub-frontend/app/globals.css pour une
+ * cohérence visuelle entre le site public et l'application interne.
+ */
+:root {
+  --sh-orange: #ff7900;
+  --sh-space-xs: 0.25rem;
+  --sh-space-sm: 0.5rem;
+  --sh-space-md: 1rem;
+  --sh-space-lg: 1.5rem;
+  --sh-space-xl: 2.5rem;
+
+  --bs-box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08);
+  --bs-box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  --bs-box-shadow-lg: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
+  --bs-card-box-shadow: var(--bs-box-shadow-sm);
+}
+
+body {
+  min-height: 100vh;
+}

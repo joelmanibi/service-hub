@@ -1,0 +1,211 @@
+/* Fiche d'identité d'instance — bandeau de marque, puis bloc identité
+   (avatar/nom/code/statut, façon carte) accolé au dossier détaillé
+   (sections à légende). Empile en une colonne en dessous de md et à
+   l'impression. */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sh-space-lg);
+}
+
+.letterhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sh-space-md);
+  padding-bottom: var(--sh-space-md);
+  border-bottom: 1px solid var(--bs-border-color-subtle);
+}
+
+.brand {
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+.brandSubtitle {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) 1fr;
+  gap: var(--sh-space-lg);
+  align-items: start;
+}
+
+@media (max-width: 767.98px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.identityCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sh-space-sm);
+  padding: var(--sh-space-lg) var(--sh-space-md);
+  background-color: var(--bs-tertiary-bg);
+  border-radius: var(--sh-radius-lg);
+}
+
+.avatar {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 1.375rem;
+}
+
+.identityName {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  margin-bottom: 0;
+  word-break: break-word;
+}
+
+.identityCode {
+  font-size: 0.8125rem;
+}
+
+.identityMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+  font-size: 0.8125rem;
+  color: var(--bs-secondary-color);
+  padding-top: var(--sh-space-sm);
+  margin-top: var(--sh-space-xs);
+  border-top: 1px solid var(--bs-border-color-subtle);
+  width: 100%;
+  justify-content: center;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sh-space-lg);
+  min-width: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sh-space-sm);
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sh-space-sm) var(--sh-space-lg);
+}
+
+@media (max-width: 575.98px) {
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+}
+
+.fieldValue {
+  font-weight: 500;
+}
+
+.componentList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sh-space-sm);
+}
+
+.componentCard {
+  padding: var(--sh-space-sm) var(--sh-space-md);
+  border: 1px solid var(--bs-border-color-subtle);
+  border-radius: var(--sh-radius-md);
+  background-color: var(--bs-tertiary-bg);
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: var(--sh-space-sm);
+}
+
+.tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background-color: var(--bs-white);
+  border: 1px solid var(--bs-border-color-subtle);
+}
+
+.table thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+  border-bottom-width: 1px;
+}
+
+.table {
+  --bs-table-border-color: var(--bs-border-color-subtle);
+}
+
+.comments {
+  white-space: pre-wrap;
+}
+
+.architectureImage {
+  max-height: 24rem;
+  object-fit: contain;
+}
+
+/* Impression : identité et dossier en une colonne, grilles de champs
+   mises à plat pour une lecture séquentielle indépendante de la largeur
+   d'écran capturée à l'écran. */
+@media print {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .identityCard {
+    background-color: transparent;
+    border: 1px solid var(--bs-border-color-subtle);
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .componentCard {
+    background-color: transparent;
+    break-inside: avoid;
+  }
+
+  .section {
+    break-inside: avoid;
+  }
+}
