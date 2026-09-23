@@ -6,14 +6,17 @@
  * verify-otp, refresh, logout, profil) sans passer par un endpoint
  * d'inscription (hors périmètre du module auth actuel).
  *
- * Identifiants : joelmaniofficiel@gmail.com (ou login "admin") —
- * connexion par code OTP envoyé par email (aucun mot de passe). L'email
- * doit être une boîte réellement accessible : c'est là que le code OTP
- * est envoyé (MAIL_PROVIDER=gmail).
+ * Identifiants pilotés par `ADMIN_EMAIL`/`ADMIN_LOGIN` (variables
+ * d'environnement, cf. backend/.env) — repli sur des valeurs de
+ * développement si absentes, pour ne pas casser le workflow local
+ * existant. En production, définir ces deux variables avant de seeder :
+ * aucune édition du code n'est nécessaire. L'email doit être une boîte
+ * réellement accessible — c'est là que le code OTP de connexion est
+ * envoyé (aucun mot de passe).
  */
 
-const DEMO_EMAIL = 'joelmaniofficiel@gmail.com';
-const DEMO_LOGIN = 'admin';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'joelmaniofficiel@gmail.com';
+const ADMIN_LOGIN = process.env.ADMIN_LOGIN || 'admin';
 
 module.exports = {
   async up(queryInterface) {
@@ -23,7 +26,7 @@ module.exports = {
       {
         first_name: 'Admin',
         last_name: 'ServiceHub',
-        email: DEMO_EMAIL,
+        email: ADMIN_EMAIL,
         role: 'ADMIN',
         is_active: true,
         created_at: now,
@@ -35,8 +38,8 @@ module.exports = {
     await queryInterface.bulkInsert('credentials', [
       {
         user_id: userId,
-        login: DEMO_LOGIN,
-        email: DEMO_EMAIL,
+        login: ADMIN_LOGIN,
+        email: ADMIN_EMAIL,
         is_active: true,
         created_at: now,
         updated_at: now,
@@ -46,10 +49,10 @@ module.exports = {
 
   async down(queryInterface) {
     const [[credential]] = await queryInterface.sequelize.query(
-      `SELECT user_id AS userId FROM credentials WHERE email = '${DEMO_EMAIL}'`
+      `SELECT user_id AS userId FROM credentials WHERE email = '${ADMIN_EMAIL}'`
     );
 
-    await queryInterface.bulkDelete('credentials', { email: DEMO_EMAIL });
+    await queryInterface.bulkDelete('credentials', { email: ADMIN_EMAIL });
 
     if (credential) {
       await queryInterface.bulkDelete('users', { id: credential.userId });
