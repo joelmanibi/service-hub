@@ -89,6 +89,10 @@ SMTP_SECURE=false
 SMTP_USER=votre_utilisateur_smtp
 SMTP_PASSWORD=votre_mot_de_passe_smtp
 SMTP_FROM=ServiceHub <no-reply@votre-domaine.tld>
+# Contournement TEMPORAIRE si le relais SMTP présente un certificat
+# expiré/auto-signé (erreur "certificate has expired") — à ne définir
+# que le temps que le certificat soit renouvelé, jamais en usage normal :
+# SMTP_TLS_REJECT_UNAUTHORIZED=false
 
 # --- Logging ---
 LOG_LEVEL=info

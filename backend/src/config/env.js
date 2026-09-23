@@ -39,6 +39,11 @@ module.exports = {
     user: process.env.SMTP_USER,
     password: process.env.SMTP_PASSWORD,
     from: process.env.SMTP_FROM || 'ServiceHub <no-reply@servicehub.local>',
+    // Contournement temporaire pour un relais SMTP interne dont le
+    // certificat est expiré/auto-signé — sécurisé par défaut (true),
+    // à désactiver explicitement (SMTP_TLS_REJECT_UNAUTHORIZED=false)
+    // uniquement le temps que le certificat soit renouvelé.
+    tlsRejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
     gmail: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_PASS,

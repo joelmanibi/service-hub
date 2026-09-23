@@ -33,6 +33,7 @@ function getTransporter() {
             port: mailerConfig.port,
             secure: mailerConfig.secure,
             auth: mailerConfig.user ? { user: mailerConfig.user, pass: mailerConfig.password } : undefined,
+            tls: { rejectUnauthorized: mailerConfig.tlsRejectUnauthorized },
           });
   }
 
