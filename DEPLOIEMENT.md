@@ -170,6 +170,10 @@ Créer `servicehub-frontend/.env` :
 ```ini
 # Derrière le reverse proxy (cf. section Nginx) : URL relative au domaine de l'admin
 NEXT_PUBLIC_API_URL=/api/v1
+# Relais intégré : Next transmet lui-même /api/v1/* et /uploads/* au backend
+# (indispensable si le frontal HTTPS envoie le trafic directement au port
+# de l'admin sans passer par Nginx). Lu au build.
+BACKEND_PROXY_TARGET=http://127.0.0.1:5002
 ```
 
 > `NEXT_PUBLIC_*` est injecté dans le bundle envoyé au navigateur **au moment du build** : mettre l'URL de l'API telle que les navigateurs la voient, jamais une URL interne (`127.0.0.1`). Une URL relative (`/api/v1`) est recommandée derrière le reverse proxy ; une URL absolue (`https://api.votre-domaine.tld/api/v1`) fonctionne aussi. Toute modification impose de **refaire le build**.
@@ -198,6 +202,9 @@ Créer `service-hub-public/.env.local` (ou `.env`) :
 API_SERVER_URL=http://127.0.0.1:5002/api/v1
 # URL vue par le NAVIGATEUR (liens vers les logos/schémas /uploads/...)
 NEXT_PUBLIC_API_URL=/api/v1
+# Relais intégré : Next transmet lui-même /uploads/* au backend (si le
+# frontal HTTPS ne passe pas par Nginx). Lu au build.
+BACKEND_PROXY_TARGET=http://127.0.0.1:5002
 ```
 
 > Deux URL distinctes :
