@@ -18,6 +18,10 @@ const idParamSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
 });
 
+// Pods de rattachement (référentiel settings.Pod) : liste complète, qui
+// remplace les rattachements existants à chaque envoi.
+const podIdsSchema = Joi.array().items(Joi.number().integer().positive()).unique();
+
 const createUserSchema = Joi.object({
   firstName: Joi.string().trim().max(100).required(),
   lastName: Joi.string().trim().max(100).required(),
@@ -27,6 +31,7 @@ const createUserSchema = Joi.object({
   role: Joi.string()
     .valid(...ROLE_VALUES)
     .default(ROLES.USER),
+  podIds: podIdsSchema,
 });
 
 const updateUserSchema = Joi.object({
@@ -34,6 +39,7 @@ const updateUserSchema = Joi.object({
   lastName: Joi.string().trim().max(100),
   email: Joi.string().trim().email(),
   phone: Joi.string().trim().max(30).allow('', null),
+  podIds: podIdsSchema,
 }).min(1);
 
 const changeRoleSchema = Joi.object({
@@ -46,6 +52,7 @@ const listUsersQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   search: Joi.string().trim().max(150).allow('', null),
+  podId: Joi.number().integer().positive(),
   sortBy: Joi.string().valid('firstName', 'lastName', 'email', 'createdAt').default('createdAt'),
   order: Joi.string().valid('ASC', 'DESC', 'asc', 'desc').default('DESC'),
 });

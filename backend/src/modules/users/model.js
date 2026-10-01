@@ -63,9 +63,34 @@ module.exports = (sequelize, DataTypes) => {
   // Association réciproque vers Credential (module auth), nécessaire
   // pour exposer le login/dernière connexion dans l'API Users (liste,
   // détail, création) sans dupliquer ces champs sur User.
+  // UserPod : table pivot many-to-many User <-> Pod (référentiel settings) —
+  // un utilisateur peut être rattaché à un ou plusieurs pods.
+  const UserPod = sequelize.define(
+    'UserPod',
+    {
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+      },
+      podId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+      },
+    },
+    { tableName: 'user_pods' }
+  );
+
   User.associate = (models) => {
     User.hasOne(models.Credential, { as: 'credential', foreignKey: 'userId' });
+    User.belongsToMany(models.Pod, {
+      through: UserPod,
+      as: 'pods',
+      foreignKey: 'userId',
+      otherKey: 'podId',
+    });
   };
 
-  return User;
+  return { User, UserPod };
 };

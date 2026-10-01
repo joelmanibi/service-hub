@@ -6,6 +6,8 @@ import UsersTable from "./UsersTable";
 import UserFormModal, { type UserFormValues } from "./UserFormModal";
 import ChangeRoleModal from "./ChangeRoleModal";
 import ConfirmActionModal, { type ConfirmActionType } from "./ConfirmActionModal";
+import BulkUserImportModal from "./BulkUserImportModal";
+import { listPods, type Pod } from "@/services/pods.service";
 import Pagination from "@/components/common/Pagination";
 import type { ManagedUser, Role } from "./mockUsers";
 import { ROLE_LABELS } from "./mockUsers";
@@ -26,6 +28,7 @@ const EXPORT_PAGE_SIZE = 100;
 
 type ModalState =
   | { type: "create" }
+  | { type: "bulk-import" }
   | { type: "edit"; user: ManagedUser }
   | { type: "changeRole"; user: ManagedUser }
   | { type: "confirm"; action: ConfirmActionType; user: ManagedUser };
@@ -51,13 +54,21 @@ export default function UsersPageClient() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pods, setPods] = useState<Pod[]>([]);
+  const [podFilter, setPodFilter] = useState("");
 
   const loadUsers = async () => {
     setIsLoading(true);
     setLoadError(null);
 
     try {
-      const result = await listUsers({ page, limit: PAGE_SIZE, sortBy: "firstName", order: "ASC" });
+      const result = await listUsers({
+        page,
+        limit: PAGE_SIZE,
+        podId: podFilter ? Number(podFilter) : undefined,
+        sortBy: "firstName",
+        order: "ASC",
+      });
       setUsers(result.items);
       setTotalPages(result.totalPages);
       setTotal(result.total);
@@ -71,7 +82,15 @@ export default function UsersPageClient() {
   useEffect(() => {
     loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, podFilter]);
+
+  // Référentiel des pods (formulaire, filtre, import en masse) — chargé
+  // une fois ; une erreur ici n'empêche pas d'afficher les utilisateurs.
+  useEffect(() => {
+    listPods({ limit: 100 })
+      .then((result) => setPods(result.items))
+      .catch(() => setPods([]));
+  }, []);
 
   const showNotice = (message: string) => {
     setNotice(message);
@@ -88,6 +107,7 @@ export default function UsersPageClient() {
       phone: values.phone || undefined,
       login: values.login,
       role: values.role,
+      podIds: values.podIds,
     });
 
     closeModal();
@@ -101,6 +121,7 @@ export default function UsersPageClient() {
       lastName: values.lastName,
       email: values.email,
       phone: values.phone || undefined,
+      podIds: values.podIds,
     });
 
     closeModal();
@@ -156,12 +177,13 @@ export default function UsersPageClient() {
 
       downloadCsv(
         "utilisateurs.csv",
-        ["Nom", "Email", "Login", "Rôle", "Statut", "Dernière connexion"],
+        ["Nom", "Email", "Login", "Rôle", "Pods", "Statut", "Dernière connexion"],
         allUsers.map((user) => [
           `${user.firstName} ${user.lastName}`,
           user.email,
           user.login,
           ROLE_LABELS[user.role],
+          user.pods.map((pod) => pod.code).join("; "),
           user.isActive ? "Actif" : "Inactif",
           user.lastLoginAt ?? "Jamais connecté",
         ])
@@ -175,7 +197,12 @@ export default function UsersPageClient() {
 
   return (
     <div className="container-fluid">
-      <UsersHeader onCreate={() => setModal({ type: "create" })} onExport={handleExport} isExporting={isExporting} />
+      <UsersHeader
+        onCreate={() => setModal({ type: "create" })}
+        onBulkImport={() => setModal({ type: "bulk-import" })}
+        onExport={handleExport}
+        isExporting={isExporting}
+      />
 
       {notice && (
         <div className="alert alert-success alert-dismissible" role="status">
@@ -206,9 +233,34 @@ export default function UsersPageClient() {
         </div>
       ) : (
         <>
-          <p className="text-body-secondary small mb-2">
-            {total} utilisateur{total > 1 ? "s" : ""} au total
-          </p>
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+            <p className="text-body-secondary small mb-0">
+              {total} utilisateur{total > 1 ? "s" : ""}
+              {podFilter ? " dans ce pod" : " au total"}
+            </p>
+            <div className="d-flex align-items-center gap-2">
+              <label htmlFor="users-pod-filter" className="small text-body-secondary text-nowrap mb-0">
+                Pod
+              </label>
+              <select
+                id="users-pod-filter"
+                className="form-select form-select-sm"
+                value={podFilter}
+                onChange={(event) => {
+                  setPodFilter(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Tous les pods</option>
+                {pods.map((pod) => (
+                  <option key={pod.id} value={pod.id}>
+                    {pod.code}
+                    {pod.name !== pod.code ? ` — ${pod.name}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <UsersTable
             users={users}
             onEdit={(user) => setModal({ type: "edit", user })}
@@ -223,13 +275,28 @@ export default function UsersPageClient() {
       )}
 
       {modal?.type === "create" && (
-        <UserFormModal mode="create" onClose={closeModal} onSubmit={handleCreate} />
+        <UserFormModal mode="create" pods={pods} onClose={closeModal} onSubmit={handleCreate} />
+      )}
+
+      {modal?.type === "bulk-import" && (
+        <BulkUserImportModal
+          pods={pods}
+          onClose={closeModal}
+          onDone={async (createdCount) => {
+            closeModal();
+            if (createdCount > 0) {
+              showNotice(`${createdCount} utilisateur${createdCount > 1 ? "s" : ""} créé${createdCount > 1 ? "s" : ""}.`);
+              await loadUsers();
+            }
+          }}
+        />
       )}
 
       {modal?.type === "edit" && (
         <UserFormModal
           mode="edit"
           user={modal.user}
+          pods={pods}
           onClose={closeModal}
           onSubmit={(values) => handleEdit(values, modal.user)}
         />

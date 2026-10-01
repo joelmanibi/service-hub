@@ -1,5 +1,6 @@
 type UsersHeaderProps = {
   onCreate: () => void;
+  onBulkImport: () => void;
   onExport: () => void;
   isExporting: boolean;
 };
@@ -9,7 +10,7 @@ type UsersHeaderProps = {
  * modale de création et d'export CSV. `flex-wrap` pour rester lisible
  * sur mobile (boutons passent sous le titre plutôt que de déborder).
  */
-export default function UsersHeader({ onCreate, onExport, isExporting }: UsersHeaderProps) {
+export default function UsersHeader({ onCreate, onBulkImport, onExport, isExporting }: UsersHeaderProps) {
   return (
     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <div>
@@ -27,6 +28,10 @@ export default function UsersHeader({ onCreate, onExport, isExporting }: UsersHe
             <i className="bi bi-download me-2" aria-hidden="true" />
           )}
           Exporter
+        </button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onBulkImport}>
+          <i className="bi bi-upload me-2" aria-hidden="true" />
+          Importer en masse
         </button>
         <button type="button" className="btn btn-primary" onClick={onCreate}>
           <i className="bi bi-person-plus me-2" aria-hidden="true" />

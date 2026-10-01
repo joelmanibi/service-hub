@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios";
-import type { ManagedUser, Role } from "@/components/users/mockUsers";
+import type { ManagedUser, Role, UserPod } from "@/components/users/mockUsers";
 
 /**
  * Service Utilisateurs (module users, réservé ADMIN côté backend).
@@ -32,6 +32,7 @@ interface RawUser {
   role: Role;
   isActive: boolean;
   credential?: RawCredential | null;
+  pods?: UserPod[];
 }
 
 export interface PaginatedResult<T> {
@@ -46,6 +47,7 @@ export interface ListUsersParams {
   page?: number;
   limit?: number;
   search?: string;
+  podId?: number;
   sortBy?: "firstName" | "lastName" | "email" | "createdAt";
   order?: "ASC" | "DESC";
 }
@@ -57,13 +59,17 @@ export interface CreateUserPayload {
   phone?: string;
   login: string;
   role?: Role;
+  podIds?: number[];
 }
 
+// `podIds` : liste complète des pods de rattachement — remplace les
+// rattachements existants côté backend.
 export interface UpdateUserPayload {
   firstName?: string;
   lastName?: string;
   email?: string;
   phone?: string;
+  podIds?: number[];
 }
 
 function formatLastLogin(iso: string | null | undefined): string | null {
@@ -89,6 +95,7 @@ function toManagedUser(raw: RawUser): ManagedUser {
     role: raw.role,
     isActive: raw.isActive,
     lastLoginAt: formatLastLogin(raw.credential?.lastLoginAt),
+    pods: (raw.pods ?? []).map((pod) => ({ id: pod.id, code: pod.code, name: pod.name })),
   };
 }
 

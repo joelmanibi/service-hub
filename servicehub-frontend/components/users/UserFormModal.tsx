@@ -9,6 +9,7 @@ import type { ManagedUser, Role } from "./mockUsers";
 import { ROLE_LABELS } from "./mockUsers";
 import { getApiErrorMessage } from "@/lib/apiError";
 import SearchableSelect from "@/components/common/SearchableSelect";
+import type { Pod } from "@/services/pods.service";
 
 const ROLE_VALUES: [Role, ...Role[]] = ["ADMIN", "VALIDATOR", "USER"];
 
@@ -22,6 +23,7 @@ const userFormSchema = z.object({
   phone: z.string().trim().max(30).optional().or(z.literal("")),
   login: z.string().trim().min(1, "Le login est requis.").max(60),
   role: z.enum(ROLE_VALUES),
+  podIds: z.array(z.number()),
 });
 
 export type UserFormValues = z.infer<typeof userFormSchema>;
@@ -29,6 +31,8 @@ export type UserFormValues = z.infer<typeof userFormSchema>;
 type UserFormModalProps = {
   mode: "create" | "edit";
   user?: ManagedUser;
+  // Référentiel des pods (settings) proposés au rattachement.
+  pods: Pod[];
   onClose: () => void;
   onSubmit: (values: UserFormValues) => Promise<void>;
 };
@@ -43,7 +47,7 @@ type UserFormModalProps = {
  * modale) ou rejeter en cas d'échec API (affiché ici, modale conservée
  * ouverte pour permettre de corriger et réessayer).
  */
-export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFormModalProps) {
+export default function UserFormModal({ mode, user, pods, onClose, onSubmit }: UserFormModalProps) {
   const titleId = "user-form-modal-title";
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -62,6 +66,7 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
       phone: user?.phone ?? "",
       login: user?.login ?? "",
       role: user?.role ?? "USER",
+      podIds: user?.pods.map((pod) => pod.id) ?? [],
     },
     mode: "onChange",
   });
@@ -223,6 +228,44 @@ export default function UserFormModal({ mode, user, onClose, onSubmit }: UserFor
               />
             </div>
           )}
+
+          <div className="col-12">
+            <span className="form-label d-block" id="user-pods-label">
+              Pods <span className="text-body-secondary">(optionnel — un ou plusieurs)</span>
+            </span>
+            <Controller
+              name="podIds"
+              control={control}
+              render={({ field }) => (
+                <div className="d-flex flex-wrap gap-2" role="group" aria-labelledby="user-pods-label">
+                  {pods.length === 0 && <span className="small text-body-secondary">Aucun pod défini.</span>}
+                  {pods.map((pod) => {
+                    const checked = field.value.includes(pod.id);
+                    return (
+                      <label
+                        key={pod.id}
+                        className={`btn btn-sm mb-0 ${checked ? "btn-primary" : "btn-outline-secondary"}`}
+                        title={pod.name !== pod.code ? pod.name : undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          className="visually-hidden"
+                          checked={checked}
+                          onChange={() =>
+                            field.onChange(
+                              checked ? field.value.filter((id) => id !== pod.id) : [...field.value, pod.id]
+                            )
+                          }
+                        />
+                        {checked && <i className="bi bi-check2 me-1" aria-hidden="true" />}
+                        {pod.code}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            />
+          </div>
         </div>
       </form>
     </ModalShell>

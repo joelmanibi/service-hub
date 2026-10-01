@@ -37,6 +37,9 @@ export default function UsersTable({
                 Login
               </th>
               <th scope="col">Rôle</th>
+              <th scope="col" className="d-none d-md-table-cell">
+                Pods
+              </th>
               <th scope="col">Statut</th>
               <th scope="col" className="d-none d-lg-table-cell">
                 Dernière connexion
@@ -56,6 +59,23 @@ export default function UsersTable({
                 <td className="d-none d-md-table-cell">{user.login}</td>
                 <td>
                   <RoleBadge role={user.role} />
+                </td>
+                <td className="d-none d-md-table-cell">
+                  {user.pods.length > 0 ? (
+                    <div className="d-flex flex-wrap gap-1">
+                      {user.pods.map((pod) => (
+                        <span
+                          key={pod.id}
+                          className="badge rounded-pill bg-body-tertiary text-body border"
+                          title={pod.name !== pod.code ? pod.name : undefined}
+                        >
+                          {pod.code}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-body-secondary small">—</span>
+                  )}
                 </td>
                 <td>
                   <StatusBadge isActive={user.isActive} />
@@ -123,7 +143,7 @@ export default function UsersTable({
 
             {users.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center text-body-secondary py-4">
+                <td colSpan={8} className="text-center text-body-secondary py-4">
                   Aucun utilisateur.
                 </td>
               </tr>

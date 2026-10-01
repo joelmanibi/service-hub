@@ -4,7 +4,7 @@ const db = require('../../database');
 const ApiError = require('../../shared/utils/ApiError');
 const { HTTP_STATUS, ROLES } = require('../../shared/constants');
 
-const { User, Credential, RefreshToken, UserOtp, sequelize } = db;
+const { User, Credential, RefreshToken, UserOtp, Pod, UserPod, sequelize } = db;
 
 /**
  * Couche service du module Users (utilisateurs).
@@ -25,7 +25,14 @@ const CREDENTIAL_INCLUDE = {
   attributes: ['login', 'email', 'isActive', 'lastLoginAt'],
 };
 
-async function list({ page, limit, search, sortBy, order }) {
+// Pods de rattachement de l'utilisateur (many-to-many, table user_pods).
+const PODS_INCLUDE = {
+  association: 'pods',
+  attributes: ['id', 'code', 'name'],
+  through: { attributes: [] },
+};
+
+async function list({ page, limit, search, podId, sortBy, order }) {
   const where = search
     ? {
         [Op.or]: [
@@ -36,9 +43,17 @@ async function list({ page, limit, search, sortBy, order }) {
       }
     : {};
 
+  // Filtre par pod en deux temps (ids des utilisateurs rattachés, puis
+  // requête principale) : un `where` sur l'include `pods` ne renverrait,
+  // pour chaque utilisateur, que ce pod-là au lieu de tous ses pods.
+  if (podId) {
+    const links = await UserPod.findAll({ where: { podId }, attributes: ['userId'] });
+    where.id = links.map((link) => link.userId);
+  }
+
   const { rows, count } = await User.findAndCountAll({
     where,
-    include: [CREDENTIAL_INCLUDE],
+    include: [CREDENTIAL_INCLUDE, PODS_INCLUDE],
     order: [[sortBy, order.toUpperCase()]],
     limit,
     offset: (page - 1) * limit,
@@ -55,7 +70,7 @@ async function list({ page, limit, search, sortBy, order }) {
 }
 
 async function getById(id) {
-  const user = await User.findByPk(id, { include: [CREDENTIAL_INCLUDE] });
+  const user = await User.findByPk(id, { include: [CREDENTIAL_INCLUDE, PODS_INCLUDE] });
 
   if (!user) {
     throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Utilisateur introuvable');
@@ -70,6 +85,15 @@ async function assertEmailAvailable(email, excludeId = null) {
 
   if (existing) {
     throw new ApiError(HTTP_STATUS.CONFLICT, 'Cet email est déjà utilisé');
+  }
+}
+
+async function assertPodsExist(podIds) {
+  if (!podIds || podIds.length === 0) return;
+
+  const found = await Pod.count({ where: { id: podIds } });
+  if (found !== podIds.length) {
+    throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Un ou plusieurs pods sont introuvables');
   }
 }
 
@@ -89,6 +113,7 @@ async function assertLoginAvailable(login) {
 async function create(data) {
   await assertEmailAvailable(data.email);
   await assertLoginAvailable(data.login);
+  await assertPodsExist(data.podIds);
 
   const created = await sequelize.transaction(async (transaction) => {
     const user = await User.create(
@@ -112,6 +137,10 @@ async function create(data) {
       { transaction }
     );
 
+    if (data.podIds && data.podIds.length > 0) {
+      await user.setPods(data.podIds, { transaction });
+    }
+
     return user;
   });
 
@@ -131,22 +160,30 @@ async function create(data) {
  */
 async function update(id, data) {
   const user = await getById(id);
+  const { podIds, ...fields } = data;
   const previousEmail = user.email;
-  const emailChanged = Boolean(data.email) && data.email !== previousEmail;
+  const emailChanged = Boolean(fields.email) && fields.email !== previousEmail;
 
   if (emailChanged) {
-    await assertEmailAvailable(data.email, id);
+    await assertEmailAvailable(fields.email, id);
   }
+  await assertPodsExist(podIds);
 
-  return sequelize.transaction(async (transaction) => {
-    const updatedUser = await user.update(data, { transaction });
-
-    if (emailChanged) {
-      await Credential.update({ email: data.email }, { where: { userId: id }, transaction });
+  await sequelize.transaction(async (transaction) => {
+    if (Object.keys(fields).length > 0) {
+      await user.update(fields, { transaction });
     }
 
-    return updatedUser;
+    if (emailChanged) {
+      await Credential.update({ email: fields.email }, { where: { userId: id }, transaction });
+    }
+
+    if (podIds) {
+      await user.setPods(podIds, { transaction });
+    }
   });
+
+  return getById(id);
 }
 
 /**
