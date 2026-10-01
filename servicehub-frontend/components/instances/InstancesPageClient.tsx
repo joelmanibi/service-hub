@@ -31,8 +31,10 @@ import { listNetworks, type Network } from "@/services/networks.service";
 import { listPods, type Pod } from "@/services/pods.service";
 import { listSupportLevels, type SupportLevel } from "@/services/supportLevels.service";
 import { getApiErrorMessage } from "@/lib/apiError";
+import { downloadCsv } from "@/lib/exportCsv";
 
 const PAGE_SIZE = 10;
+const EXPORT_PAGE_SIZE = 100;
 
 type ModalState =
   | { type: "create" }
@@ -69,10 +71,12 @@ export default function InstancesPageClient() {
   const [supportLevels, setSupportLevels] = useState<SupportLevel[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<InstanceFilters>(EMPTY_INSTANCE_FILTERS);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -124,6 +128,7 @@ export default function InstancesPageClient() {
       ]);
       setInstances(instancesResult.items);
       setTotalPages(instancesResult.totalPages);
+      setTotal(instancesResult.total);
       setClients(clientsResult.items);
       setCountries(countriesResult.items);
       setServices(servicesResult.items);
@@ -235,11 +240,64 @@ export default function InstancesPageClient() {
     await loadData();
   };
 
+  // Parcourt toutes les pages côté serveur (même recherche/filtres que la
+  // vue courante) — le backend plafonne `limit` à 100 sur ce module, donc
+  // un seul appel ne couvre pas un total arbitraire.
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const allInstances: ManagedInstance[] = [];
+      let currentPage = 1;
+      let pages = 1;
+
+      do {
+        const result = await listInstances({
+          page: currentPage,
+          limit: EXPORT_PAGE_SIZE,
+          search: search || undefined,
+          countryId: filters.countryId ? Number(filters.countryId) : undefined,
+          serviceId: filters.serviceId ? Number(filters.serviceId) : undefined,
+          serviceTypeId: filters.serviceTypeId ? Number(filters.serviceTypeId) : undefined,
+          environmentId: filters.environmentId ? Number(filters.environmentId) : undefined,
+          statutInstanceId: filters.statutInstanceId ? Number(filters.statutInstanceId) : undefined,
+          podId: filters.podId ? Number(filters.podId) : undefined,
+        });
+        allInstances.push(...result.items);
+        pages = result.totalPages;
+        currentPage += 1;
+      } while (currentPage <= pages);
+
+      const serviceById = new Map(services.map((service) => [service.id, service.name]));
+
+      downloadCsv(
+        "instances.csv",
+        ["Code", "Nom", "Client", "Pod", "Service", "Statut", "Environnements", "Sites d'hébergement"],
+        allInstances.map((instance) => [
+          instance.code,
+          instance.name,
+          instance.clientName || "",
+          instance.podName || "",
+          serviceById.get(instance.serviceId) ?? "",
+          instance.statutInstanceName || "",
+          instance.environmentNames.join("; "),
+          instance.hostingNames.join("; "),
+        ])
+      );
+    } catch (error) {
+      showNotice(getApiErrorMessage(error, "Impossible d'exporter la liste des instances."));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="container-fluid">
       <InstancesHeader
         onCreate={() => setModal({ type: "create" })}
         onBulkImport={() => setModal({ type: "bulk-import" })}
+        onExport={handleExport}
+        isExporting={isExporting}
       />
 
       {notice && (
@@ -302,7 +360,10 @@ export default function InstancesPageClient() {
         </div>
       ) : (
         <>
-          <div className="d-flex justify-content-end mb-3">
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <p className="text-body-secondary small mb-0">
+              {total} instance{total > 1 ? "s" : ""} au total
+            </p>
             <ViewToggle value={viewMode} onChange={setViewMode} />
           </div>
 

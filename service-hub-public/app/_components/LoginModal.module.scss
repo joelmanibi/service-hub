@@ -1,0 +1,37 @@
+/* Fenêtre pilotée par l'état React (pas par le JS Boosted), comme le
+   tiroir de filtres du catalogue. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 1050;
+}
+
+.dialogWrapper {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1051;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 420px;
+}
+
+.icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+}
+
+.codeInput {
+  font-size: 1.5rem;
+  letter-spacing: 0.4em;
+}

@@ -10,6 +10,12 @@ const idParamSchema = Joi.object({
   id: Joi.number().integer().positive().required(),
 });
 
+const instanceParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required(),
+  instanceId: Joi.number().integer().positive().required(),
+});
+
 module.exports = {
   idParamSchema,
+  instanceParamSchema,
 };

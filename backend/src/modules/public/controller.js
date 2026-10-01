@@ -25,8 +25,26 @@ const listServiceInstances = asyncHandler(async (req, res) => {
   res.status(HTTP_STATUS.OK).json(new ApiResponse(true, 'Liste des instances du service', instances));
 });
 
+const listInstances = asyncHandler(async (req, res) => {
+  const instances = await publicService.listInstances();
+  res.status(HTTP_STATUS.OK).json(new ApiResponse(true, 'Liste des instances', instances));
+});
+
+const getServiceInstanceById =asyncHandler(async (req, res) => {
+  const instance = await publicService.getServiceInstanceById(req.params.id, req.params.instanceId);
+  res.status(HTTP_STATUS.OK).json(new ApiResponse(true, "Fiche de l'instance", instance));
+});
+
+const getServiceInstanceSensitive = asyncHandler(async (req, res) => {
+  const data = await publicService.getServiceInstanceSensitive(req.params.id, req.params.instanceId);
+  res.status(HTTP_STATUS.OK).json(new ApiResponse(true, "Informations sensibles de l'instance", data));
+});
+
 module.exports = {
+  getServiceInstanceSensitive,
   listServices,
   getServiceById,
   listServiceInstances,
+  listInstances,
+  getServiceInstanceById,
 };

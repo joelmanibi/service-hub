@@ -8,6 +8,7 @@ import ChangeRoleModal from "./ChangeRoleModal";
 import ConfirmActionModal, { type ConfirmActionType } from "./ConfirmActionModal";
 import Pagination from "@/components/common/Pagination";
 import type { ManagedUser, Role } from "./mockUsers";
+import { ROLE_LABELS } from "./mockUsers";
 import {
   listUsers,
   createUser,
@@ -18,8 +19,10 @@ import {
   resetUserAccess,
 } from "@/services/users.service";
 import { getApiErrorMessage } from "@/lib/apiError";
+import { downloadCsv } from "@/lib/exportCsv";
 
 const PAGE_SIZE = 10;
+const EXPORT_PAGE_SIZE = 100;
 
 type ModalState =
   | { type: "create" }
@@ -42,7 +45,9 @@ export default function UsersPageClient() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -55,6 +60,7 @@ export default function UsersPageClient() {
       const result = await listUsers({ page, limit: PAGE_SIZE, sortBy: "firstName", order: "ASC" });
       setUsers(result.items);
       setTotalPages(result.totalPages);
+      setTotal(result.total);
     } catch (error) {
       setLoadError(getApiErrorMessage(error, "Impossible de charger la liste des utilisateurs."));
     } finally {
@@ -130,9 +136,46 @@ export default function UsersPageClient() {
     await loadUsers();
   };
 
+  // Parcourt toutes les pages côté serveur — le backend plafonne `limit`
+  // à 100 sur ce module, donc un seul appel ne couvre pas un total
+  // arbitraire.
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const allUsers: ManagedUser[] = [];
+      let currentPage = 1;
+      let pages = 1;
+
+      do {
+        const result = await listUsers({ page: currentPage, limit: EXPORT_PAGE_SIZE, sortBy: "firstName", order: "ASC" });
+        allUsers.push(...result.items);
+        pages = result.totalPages;
+        currentPage += 1;
+      } while (currentPage <= pages);
+
+      downloadCsv(
+        "utilisateurs.csv",
+        ["Nom", "Email", "Login", "Rôle", "Statut", "Dernière connexion"],
+        allUsers.map((user) => [
+          `${user.firstName} ${user.lastName}`,
+          user.email,
+          user.login,
+          ROLE_LABELS[user.role],
+          user.isActive ? "Actif" : "Inactif",
+          user.lastLoginAt ?? "Jamais connecté",
+        ])
+      );
+    } catch (error) {
+      showNotice(getApiErrorMessage(error, "Impossible d'exporter la liste des utilisateurs."));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="container-fluid">
-      <UsersHeader onCreate={() => setModal({ type: "create" })} />
+      <UsersHeader onCreate={() => setModal({ type: "create" })} onExport={handleExport} isExporting={isExporting} />
 
       {notice && (
         <div className="alert alert-success alert-dismissible" role="status">
@@ -163,6 +206,9 @@ export default function UsersPageClient() {
         </div>
       ) : (
         <>
+          <p className="text-body-secondary small mb-2">
+            {total} utilisateur{total > 1 ? "s" : ""} au total
+          </p>
           <UsersTable
             users={users}
             onEdit={(user) => setModal({ type: "edit", user })}

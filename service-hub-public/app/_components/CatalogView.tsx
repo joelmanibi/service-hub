@@ -280,12 +280,11 @@ export default function CatalogView({ services, loadError }: CatalogViewProps) {
 
       {isFiltersOpen && (
         <>
-          <button
-            type="button"
-            className={`btn p-0 border-0 ${styles.drawerBackdrop}`}
-            aria-label="Fermer les filtres"
-            onClick={() => setIsFiltersOpen(false)}
-          />
+          {/* Overlay purement visuel — un clic dessus ne ferme plus le
+              tiroir (comme les modales de l'admin, pour éviter une
+              fermeture accidentelle) : seuls le bouton ×, "Voir les
+              résultats" et Échap le font. */}
+          <div className={styles.drawerBackdrop} aria-hidden="true" />
           <div className={`bg-white py-4 px-3 ${styles.drawerPanel}`} role="dialog" aria-modal="true" aria-label="Filtres">
             <div className="d-flex align-items-center justify-content-between mb-3">
               <span className="fw-bold">Filtres</span>

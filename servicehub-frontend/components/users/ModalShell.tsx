@@ -22,7 +22,9 @@ const SIZE_CLASS: Record<"md" | "lg" | "xl", string> = {
  * Coquille Bootstrap Modal commune (backdrop + dialog + header/body/footer),
  * pilotée entièrement par l'état React du parent (pas par le JS Boosted :
  * évite les conflits entre l'instance bootstrap.Modal et le rendu
- * conditionnel React). Ferme sur Échap ou clic sur le backdrop.
+ * conditionnel React). Ferme sur Échap ou via le bouton de fermeture —
+ * jamais par un clic sur le backdrop, pour éviter de perdre la saisie
+ * d'un formulaire sur un clic accidentel en dehors de la boîte.
  * Réutilisée par UserFormModal, ChangeRoleModal et ConfirmActionModal.
  */
 export default function ModalShell({
@@ -51,9 +53,6 @@ export default function ModalShell({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) onClose();
-        }}
       >
         <div
           className={[

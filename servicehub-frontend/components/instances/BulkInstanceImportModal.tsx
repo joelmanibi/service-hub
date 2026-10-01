@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
+import ExcelJS from "exceljs";
 import ModalShell from "@/components/users/ModalShell";
-import { parseCsv } from "@/lib/csv";
+import { parseCsvFile } from "@/lib/csv";
 import { parseExcel } from "@/lib/excel";
 import { createInstance, type ManagedInstance } from "@/services/instances.service";
 import type { ManagedClient } from "@/components/clients/clientTypes";
@@ -67,9 +68,98 @@ const HEADER_ALIASES = {
   comments: ["commentaires", "commentaire", "comments"],
 };
 
-const TEMPLATE_CSV =
-  'nom,client,pod,service,statut,environnements,sites d\'hébergement,produit océane,commentaires\r\n' +
-  'MAXIT OCI,Orange Cote d\'Ivoire,Pod A,MAXIT,EN SERVICE,Production;Pré-production,DC VITIB,MAXIT_OCI,"Exemple, avec virgule"\r\n';
+const REFERENCE_SHEET_NAME = "Valeurs autorisées";
+// Plage sur laquelle les listes déroulantes (validation de données) sont
+// posées, sur la feuille de saisie — assez large pour un import
+// volumineux sans générer un fichier inutilement lourd.
+const TEMPLATE_MAX_ROWS = 300;
+
+// Génère le classeur .xlsx modèle : feuille "Instances" (colonnes à
+// remplir, avec une ligne d'exemple) + feuille "Valeurs autorisées" listant,
+// par colonne, les libellés réellement valides à ce jour (Client/Pod/
+// Service/Statut/Environnement/Hébergement — chargés par InstancesPageClient,
+// jamais une liste inventée). Client/Pod/Service/Statut (mono-valués,
+// obligatoires) reçoivent en plus une vraie liste déroulante Excel
+// pointant vers cette feuille, pour éviter toute faute de frappe à la
+// saisie. Environnements/Hébergements restent en texte libre (plusieurs
+// valeurs séparées par `;` dans une même cellule — une liste déroulante
+// Excel ne permet qu'une seule valeur par cellule).
+async function buildExcelTemplate(
+  clients: ManagedClient[],
+  pods: Pod[],
+  services: CatalogService[],
+  statutInstances: StatutInstance[],
+  environments: Environment[],
+  hostings: Hosting[]
+): Promise<Blob> {
+  const workbook = new ExcelJS.Workbook();
+
+  const dataSheet = workbook.addWorksheet("Instances");
+  dataSheet.columns = [
+    { header: "Nom", key: "name", width: 26 },
+    { header: "Client", key: "client", width: 26 },
+    { header: "Pod", key: "pod", width: 16 },
+    { header: "Service", key: "service", width: 22 },
+    { header: "Statut", key: "statut", width: 18 },
+    { header: "Environnements", key: "environments", width: 26 },
+    { header: "Sites d'hébergement", key: "hostings", width: 26 },
+    { header: "Produit Océane", key: "produitOceane", width: 18 },
+    { header: "Commentaires", key: "comments", width: 30 },
+  ];
+  dataSheet.getRow(1).font = { bold: true };
+  dataSheet.addRow({
+    name: "MAXIT OCI",
+    client: clients[0]?.name ?? "Orange Côte d'Ivoire",
+    pod: pods[0]?.name ?? "Pod A",
+    service: services[0]?.name ?? "MAXIT",
+    statut: statutInstances[0]?.name ?? "En service",
+    environments: environments.slice(0, 2).map((item) => item.name).join("; "),
+    hostings: hostings[0]?.name ?? "",
+    produitOceane: "MAXIT_OCI",
+    comments: "Ligne d'exemple — à remplacer ou supprimer",
+  });
+
+  const refSheet = workbook.addWorksheet(REFERENCE_SHEET_NAME);
+  const refColumns: { header: string; items: string[] }[] = [
+    { header: "Client", items: clients.map((item) => item.name) },
+    { header: "Pod", items: pods.map((item) => item.name) },
+    { header: "Service", items: services.map((item) => item.name) },
+    { header: "Statut", items: statutInstances.map((item) => item.name) },
+    { header: "Environnement", items: environments.map((item) => item.name) },
+    { header: "Site d'hébergement", items: hostings.map((item) => item.name) },
+  ];
+  refColumns.forEach((column, columnIndex) => {
+    const headerCell = refSheet.getRow(1).getCell(columnIndex + 1);
+    headerCell.value = column.header;
+    headerCell.font = { bold: true };
+    column.items.forEach((item, itemIndex) => {
+      refSheet.getRow(itemIndex + 2).getCell(columnIndex + 1).value = item;
+    });
+    refSheet.getColumn(columnIndex + 1).width = 26;
+  });
+
+  const dropdowns: { column: string; refColumn: string; count: number }[] = [
+    { column: "B", refColumn: "A", count: clients.length },
+    { column: "C", refColumn: "B", count: pods.length },
+    { column: "D", refColumn: "C", count: services.length },
+    { column: "E", refColumn: "D", count: statutInstances.length },
+  ];
+  dropdowns.forEach(({ column, refColumn, count }) => {
+    if (count === 0) return;
+    for (let row = 2; row <= TEMPLATE_MAX_ROWS; row += 1) {
+      dataSheet.getCell(`${column}${row}`).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: [`'${REFERENCE_SHEET_NAME}'!$${refColumn}$2:$${refColumn}$${count + 1}`],
+      };
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
 
 function findColumnIndex(headerRow: string[], aliases: string[]): number {
   return headerRow.findIndex((cell) => aliases.includes(cell.trim().toLowerCase()));
@@ -227,6 +317,16 @@ function buildParsedRows(
  * d'édition de l'instance. `onDone` est appelé une fois le rapport
  * affiché et fermé par l'utilisateur, avec le nombre d'instances
  * effectivement créées (le parent recharge la liste si > 0).
+ *
+ * Le modèle téléchargeable (`buildExcelTemplate`) est un classeur .xlsx à
+ * deux feuilles généré à la volée avec exceljs, à partir des mêmes
+ * référentiels déjà chargés par InstancesPageClient (jamais une liste
+ * statique/inventée) : "Instances" (colonnes à remplir) et "Valeurs
+ * autorisées" (une colonne par référentiel), avec de vraies listes
+ * déroulantes Excel sur les colonnes mono-valuées obligatoires
+ * (Client/Pod/Service/Statut) pointant vers cette seconde feuille.
+ * `parseExcel` (lib/excel.ts) ne lit que la première feuille au ré-import,
+ * donc la feuille de référence est ignorée sans traitement particulier.
  */
 export default function BulkInstanceImportModal({
   clients,
@@ -242,6 +342,7 @@ export default function BulkInstanceImportModal({
   const [formatError, setFormatError] = useState<string | null>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBuildingTemplate, setIsBuildingTemplate] = useState(false);
   const [results, setResults] = useState<RowResult[] | null>(null);
 
   const validRows = rows.filter((row) => !row.error);
@@ -257,7 +358,7 @@ export default function BulkInstanceImportModal({
 
     let fileRows: string[][];
     try {
-      fileRows = isExcelFile(file) ? await parseExcel(file) : parseCsv(await file.text());
+      fileRows = isExcelFile(file) ? await parseExcel(file) : await parseCsvFile(file);
     } catch {
       setFormatError("Impossible de lire ce fichier — vérifiez qu'il s'agit bien d'un CSV ou d'un Excel valide.");
       return;
@@ -281,14 +382,19 @@ export default function BulkInstanceImportModal({
     setRows(parsedRows);
   };
 
-  const handleDownloadTemplate = () => {
-    const blob = new Blob([TEMPLATE_CSV], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "modele-import-instances.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadTemplate = async () => {
+    setIsBuildingTemplate(true);
+    try {
+      const blob = await buildExcelTemplate(clients, pods, services, statutInstances, environments, hostings);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "modele-import-instances.xlsx";
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsBuildingTemplate(false);
+    }
   };
 
   const handleImport = async () => {
@@ -417,10 +523,24 @@ export default function BulkInstanceImportModal({
             de l&apos;instance.
           </p>
 
-          <button type="button" className="btn btn-link p-0 mb-3" onClick={handleDownloadTemplate}>
-            <i className="bi bi-download me-1" aria-hidden="true" />
-            Télécharger un modèle CSV
+          <button
+            type="button"
+            className="btn btn-link p-0 mb-3"
+            onClick={handleDownloadTemplate}
+            disabled={isBuildingTemplate}
+          >
+            {isBuildingTemplate ? (
+              <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" />
+            ) : (
+              <i className="bi bi-download me-1" aria-hidden="true" />
+            )}
+            Télécharger un modèle Excel
           </button>
+          <p className="text-body-secondary small">
+            Le modèle contient une 2<sup>e</sup> feuille (&laquo;&nbsp;{REFERENCE_SHEET_NAME}&nbsp;&raquo;) qui liste
+            les Clients/Pods/Services/Statuts/Environnements/Hébergements actuellement disponibles, avec des listes
+            déroulantes déjà posées sur les colonnes Client, Pod, Service et Statut de la feuille de saisie.
+          </p>
 
           <div className="mb-3">
             <label htmlFor="bulk-instance-import-file" className="form-label">

@@ -22,6 +22,7 @@ import type { Pod } from "@/services/pods.service";
 import type { SupportLevel } from "@/services/supportLevels.service";
 import { getApiErrorMessage } from "@/lib/apiError";
 import ComposantFieldGroup from "./ComposantFieldGroup";
+import ComposantExcelImport from "./ComposantExcelImport";
 import styles from "./InstanceFormModal.module.scss";
 
 // Valeurs connues du champ "Produit Océane" (fournies par le métier,
@@ -321,6 +322,7 @@ export default function InstanceFormModal({
     handleSubmit,
     setFocus,
     setValue,
+    getValues,
     watch,
     trigger,
     control,
@@ -360,6 +362,7 @@ export default function InstanceFormModal({
     fields: composantFields,
     append: appendComposant,
     remove: removeComposant,
+    replace: replaceComposants,
   } = useFieldArray({ control, name: "composants" });
 
   const {
@@ -374,9 +377,13 @@ export default function InstanceFormModal({
   // cochée/décochée). Chaque Hosting embarque déjà ses `platforms` (cf.
   // hostings.service.ts), pas besoin d'un appel API supplémentaire.
   const hostingIdsValue = watch("hostingIds") ?? [];
-  const availablePlatforms = hostings
-    .filter((hosting) => hostingIdsValue.includes(String(hosting.id)))
-    .flatMap((hosting) => hosting.platforms);
+  const selectedHostings = hostings.filter((hosting) => hostingIdsValue.includes(String(hosting.id)));
+  const availablePlatforms = selectedHostings.flatMap((hosting) => hosting.platforms);
+  // Mêmes plateformes, avec leur hébergement, pour l'import Excel des
+  // composants (modèle + résolution des libellés).
+  const importablePlatforms = selectedHostings.flatMap((hosting) =>
+    hosting.platforms.map((platform) => ({ id: platform.id, name: platform.name, hostingName: hosting.name }))
+  );
 
   const produitOceaneValue = watch("produitOceane") ?? "";
   const isKnownProduitOceane =
@@ -854,6 +861,17 @@ export default function InstanceFormModal({
                 <i className="bi bi-plus-lg me-1" aria-hidden="true" />
                 Ajouter un composant
               </button>
+            </div>
+
+            <div className="mb-2">
+              <ComposantExcelImport
+                platforms={importablePlatforms}
+                getCurrentComposants={() => getValues("composants") ?? []}
+                onApply={(composants) => {
+                  replaceComposants(composants);
+                  trigger("composants");
+                }}
+              />
             </div>
 
             {composantFields.length === 0 && (

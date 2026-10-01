@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import HostingsTable from "./HostingsTable";
 import HostingFormModal, { type HostingFormValues } from "./HostingFormModal";
 import ConfirmDeleteHostingModal from "./ConfirmDeleteHostingModal";
+import BulkHostingImportModal from "./BulkHostingImportModal";
 import Pagination from "@/components/common/Pagination";
 import {
   listHostings,
@@ -19,7 +20,8 @@ const PAGE_SIZE = 10;
 type ModalState =
   | { type: "create" }
   | { type: "edit"; hosting: Hosting }
-  | { type: "delete"; hosting: Hosting };
+  | { type: "delete"; hosting: Hosting }
+  | { type: "bulkImport" };
 
 /**
  * Panneau "Hébergements" de l'onglet Paramètres : charge la liste
@@ -109,10 +111,16 @@ export default function HostingsPanel() {
     <div>
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <p className="text-body-secondary mb-0">Sites/modes d&apos;hébergement utilisés par les instances.</p>
-        <button type="button" className="btn btn-primary" onClick={() => setModal({ type: "create" })}>
-          <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-          Nouvel hébergement
-        </button>
+        <div className="d-flex gap-2">
+          <button type="button" className="btn btn-outline-secondary" onClick={() => setModal({ type: "bulkImport" })}>
+            <i className="bi bi-upload me-2" aria-hidden="true" />
+            Import en masse
+          </button>
+          <button type="button" className="btn btn-primary" onClick={() => setModal({ type: "create" })}>
+            <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+            Nouvel hébergement
+          </button>
+        </div>
       </div>
 
       {notice && (
@@ -164,6 +172,19 @@ export default function HostingsPanel() {
           hosting={modal.hosting}
           onClose={closeModal}
           onConfirm={() => handleDelete(modal.hosting)}
+        />
+      )}
+
+      {modal?.type === "bulkImport" && (
+        <BulkHostingImportModal
+          onClose={closeModal}
+          onDone={async (createdCount) => {
+            closeModal();
+            if (createdCount > 0) {
+              showNotice(`${createdCount} hébergement${createdCount > 1 ? "s" : ""} créé${createdCount > 1 ? "s" : ""}.`);
+              await loadData();
+            }
+          }}
         />
       )}
     </div>

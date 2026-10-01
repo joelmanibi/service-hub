@@ -7,6 +7,8 @@ const instanceRoutes = require('../modules/instance/routes');
 const dashboardRoutes = require('../modules/dashboard/routes');
 const settingsRoutes = require('../modules/settings/routes');
 const publicRoutes = require('../modules/public/routes');
+const integrationRoutes = require('../modules/integration/routes');
+const apiKeyRoutes = require('../modules/apikey/routes');
 
 /**
  * Routeur central de l'API.
@@ -32,5 +34,7 @@ router.use('/instances', instanceRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/public', publicRoutes);
+router.use('/integration', integrationRoutes);
+router.use('/api-keys', apiKeyRoutes);
 
 module.exports = router;

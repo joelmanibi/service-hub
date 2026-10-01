@@ -23,8 +23,10 @@ import { listClients } from "@/services/clients.service";
 import type { ManagedClient } from "@/components/clients/clientTypes";
 import { listHostings, type Hosting } from "@/services/hostings.service";
 import { getApiErrorMessage } from "@/lib/apiError";
+import { downloadCsv } from "@/lib/exportCsv";
 
 const PAGE_SIZE = 10;
+const EXPORT_PAGE_SIZE = 100;
 
 type ModalState =
   | { type: "create" }
@@ -62,7 +64,9 @@ export default function CatalogPageClient() {
   const [filters, setFilters] = useState<ServiceFilters>(EMPTY_SERVICE_FILTERS);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -90,6 +94,7 @@ export default function CatalogPageClient() {
       ]);
       setServices(servicesResult.items);
       setTotalPages(servicesResult.totalPages);
+      setTotal(servicesResult.total);
       setServiceTypes(serviceTypesResult.items);
       setCloudServiceModels(cloudServiceModelsResult.items);
       setClients(clientsResult.items);
@@ -182,11 +187,59 @@ export default function CatalogPageClient() {
     await loadData();
   };
 
+  // Parcourt toutes les pages côté serveur (même recherche/filtres que la
+  // vue courante) plutôt qu'un seul appel à limite élevée — le backend
+  // plafonne `limit` (500 sur ce module), donc pas fiable pour couvrir un
+  // total arbitraire en un seul aller-retour.
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const allServices: CatalogService[] = [];
+      let currentPage = 1;
+      let pages = 1;
+
+      do {
+        const result = await listCatalogServices({
+          page: currentPage,
+          limit: EXPORT_PAGE_SIZE,
+          search: search || undefined,
+          clientId: filters.clientId ? Number(filters.clientId) : undefined,
+          platformId: filters.platformId ? Number(filters.platformId) : undefined,
+          hostingId: filters.hostingId ? Number(filters.hostingId) : undefined,
+        });
+        allServices.push(...result.items);
+        pages = result.totalPages;
+        currentPage += 1;
+      } while (currentPage <= pages);
+
+      const serviceTypeById = new Map(serviceTypes.map((type) => [type.id, type.name]));
+
+      downloadCsv(
+        "services.csv",
+        ["Code", "Nom", "Type de service", "Modèle(s) cloud", "Description"],
+        allServices.map((service) => [
+          service.code,
+          service.name,
+          serviceTypeById.get(service.serviceTypeId) ?? "",
+          service.cloudServiceModels.map((model) => model.code).join("; "),
+          service.description ?? "",
+        ])
+      );
+    } catch (error) {
+      showNotice(getApiErrorMessage(error, "Impossible d'exporter la liste des services."));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="container-fluid">
       <CatalogHeader
         onCreate={() => setModal({ type: "create" })}
         onBulkImport={() => setModal({ type: "bulk-import" })}
+        onExport={handleExport}
+        isExporting={isExporting}
       />
 
       <GlobalSearch
@@ -243,6 +296,9 @@ export default function CatalogPageClient() {
         </div>
       ) : (
         <>
+          <p className="text-body-secondary small mb-2">
+            {total} service{total > 1 ? "s" : ""} au total
+          </p>
           <ServicesTable
             services={services}
             serviceTypes={serviceTypes}

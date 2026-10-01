@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ApiKeysPanel from "./ApiKeysPanel";
+import { getStoredUser } from "@/lib/session";
 import TypeClientsPanel from "./TypeClientsPanel";
 import CountriesPanel from "./CountriesPanel";
 import ServiceTypesPanel from "./ServiceTypesPanel";
@@ -21,7 +23,10 @@ const TABS = [
   { id: "support-levels", label: "Niveaux de support" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+// Onglet réservé aux ADMIN (le backend refuse /api-keys aux autres rôles).
+const API_KEYS_TAB = { id: "api-keys", label: "Clés d'API" } as const;
+
+type TabId = (typeof TABS)[number]["id"] | typeof API_KEYS_TAB.id;
 
 /**
  * Page Paramètres : onglets pilotés par état React (pas par le JS Boosted
@@ -32,6 +37,15 @@ type TabId = (typeof TABS)[number]["id"];
  */
 export default function SettingsPageClient() {
   const [activeTab, setActiveTab] = useState<TabId>("type-clients");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Rôle lu après montage (localStorage indisponible au rendu serveur).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsAdmin(getStoredUser()?.role === "ADMIN");
+  }, []);
+
+  const tabs: readonly { id: TabId; label: string }[] = isAdmin ? [...TABS, API_KEYS_TAB] : TABS;
 
   return (
     <div className="container-fluid">
@@ -41,7 +55,7 @@ export default function SettingsPageClient() {
       </div>
 
       <ul className="nav nav-tabs mb-4">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <li className="nav-item" key={tab.id}>
             <button
               type="button"
@@ -62,6 +76,7 @@ export default function SettingsPageClient() {
       {activeTab === "networks" && <NetworksPanel />}
       {activeTab === "pods" && <PodsPanel />}
       {activeTab === "support-levels" && <SupportLevelsPanel />}
+      {activeTab === "api-keys" && isAdmin && <ApiKeysPanel />}
     </div>
   );
 }

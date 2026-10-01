@@ -16,8 +16,10 @@ import {
   listCountries,
 } from "@/services/clients.service";
 import { getApiErrorMessage } from "@/lib/apiError";
+import { downloadCsv } from "@/lib/exportCsv";
 
 const PAGE_SIZE = 10;
+const EXPORT_PAGE_SIZE = 100;
 
 type ModalState =
   | { type: "create" }
@@ -41,7 +43,9 @@ export default function ClientsPageClient() {
   const [countries, setCountries] = useState<ReferenceItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -58,6 +62,7 @@ export default function ClientsPageClient() {
       ]);
       setClients(clientsResult.items);
       setTotalPages(clientsResult.totalPages);
+      setTotal(clientsResult.total);
       setTypeClients(typeClientsResult.items);
       setCountries(countriesResult.items);
     } catch (error) {
@@ -114,9 +119,46 @@ export default function ClientsPageClient() {
     await loadData();
   };
 
+  // Parcourt toutes les pages côté serveur — pas de recherche/filtre sur
+  // cette page, seule la pagination varie d'un appel à l'autre.
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const allClients: ManagedClient[] = [];
+      let currentPage = 1;
+      let pages = 1;
+
+      do {
+        const result = await listClients({ page: currentPage, limit: EXPORT_PAGE_SIZE });
+        allClients.push(...result.items);
+        pages = result.totalPages;
+        currentPage += 1;
+      } while (currentPage <= pages);
+
+      const typeClientById = new Map(typeClients.map((type) => [type.id, type.name]));
+      const countryById = new Map(countries.map((country) => [country.id, country.name]));
+
+      downloadCsv(
+        "clients.csv",
+        ["Nom", "Code", "Type de client", "Pays"],
+        allClients.map((client) => [
+          client.name,
+          client.code,
+          typeClientById.get(client.typeClientId) ?? "",
+          client.countryId ? (countryById.get(client.countryId) ?? "") : "",
+        ])
+      );
+    } catch (error) {
+      showNotice(getApiErrorMessage(error, "Impossible d'exporter la liste des clients."));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="container-fluid">
-      <ClientsHeader onCreate={() => setModal({ type: "create" })} />
+      <ClientsHeader onCreate={() => setModal({ type: "create" })} onExport={handleExport} isExporting={isExporting} />
 
       {notice && (
         <div className="alert alert-success alert-dismissible" role="status">
@@ -147,6 +189,9 @@ export default function ClientsPageClient() {
         </div>
       ) : (
         <>
+          <p className="text-body-secondary small mb-2">
+            {total} client{total > 1 ? "s" : ""} au total
+          </p>
           <ClientsTable
             clients={clients}
             typeClients={typeClients}

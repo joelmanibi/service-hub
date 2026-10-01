@@ -1,0 +1,187 @@
+/* Fil d'Ariane : séparateur en chevron plutôt que le "/" par défaut. */
+.breadcrumb {
+  --bs-breadcrumb-divider: "›";
+  font-size: 0.875rem;
+}
+
+/* Bandeau d'en-tête de la fiche : icône + identité de l'instance. */
+.heroIcon {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+}
+
+.heroTitle {
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.code {
+  font-family: var(--bs-font-monospace);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+/* Tuiles "faits clés" (Service, Client, Pays, Pod) : colonnes calculées
+   à partir de la largeur disponible, comme la grille du catalogue. */
+.factsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.fact {
+  min-width: 0;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--bs-tertiary-bg);
+}
+
+.factLabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.factIcon {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  background-color: var(--bs-body-bg);
+}
+
+.serviceLogo {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  object-fit: contain;
+  background-color: var(--bs-body-bg);
+}
+
+/* Contenu principal + colonne latérale (support, informations) à partir
+   de lg ; une seule colonne en dessous, la colonne latérale passant après. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  /* Colonne latérale collée sous le header (sticky, ~57px). */
+  .aside {
+    position: sticky;
+    top: 5rem;
+  }
+}
+
+.sectionTitle {
+  font-size: 1rem;
+}
+
+.sectionIcon {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+}
+
+/* Libellés de la liste de déploiement : largeur fixe pour aligner les
+   valeurs (puces) sur une même colonne. */
+.rowLabel {
+  flex: 0 0 9rem;
+}
+
+.chip {
+  font-weight: 500;
+  background-color: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.composant {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 0.5rem;
+  transition: border-color 0.15s ease;
+}
+
+.composant:hover {
+  border-color: var(--bs-border-color);
+}
+
+.composantIcon {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  background-color: var(--bs-tertiary-bg);
+}
+
+/* Cadre du schéma d'architecture : fond neutre pour les images
+   transparentes, hauteur plafonnée (l'image entière reste accessible via
+   "Ouvrir en taille réelle"). */
+.architectureFrame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--bs-tertiary-bg);
+}
+
+.architectureImage {
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+}
+
+.comments {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+/* Inventaire d'un composant (IP / serveur), visible une fois connecté. */
+.inventaire {
+  border-top: 1px dashed var(--bs-border-color);
+  padding-top: 0.5rem;
+}
+
+.inventaire table {
+  --bs-table-bg: transparent;
+}
+
+/* Section sensible verrouillée (visiteur non connecté). */
+.locked {
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 0.5rem;
+  background-color: var(--bs-tertiary-bg);
+}
+
+.lockedIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-secondary-color);
+  font-size: 1.1rem;
+}
+
+.supportItem + .supportItem {
+  border-top: 1px solid var(--bs-border-color-translucent);
+}
+
+.infoList dt {
+  font-weight: 400;
+  color: var(--bs-secondary-color);
+}
+
+.infoList dd {
+  font-weight: 500;
+  text-align: end;
+  margin-bottom: 0;
+}

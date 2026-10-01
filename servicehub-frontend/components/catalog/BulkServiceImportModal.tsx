@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent } from "react";
 import ModalShell from "@/components/users/ModalShell";
-import { parseCsv } from "@/lib/csv";
+import { parseCsvFile } from "@/lib/csv";
 import { parseExcel } from "@/lib/excel";
 import { createCatalogService } from "@/services/catalog.service";
 import type { ServiceType } from "@/services/serviceTypes.service";
@@ -180,7 +180,7 @@ export default function BulkServiceImportModal({
 
     let fileRows: string[][];
     try {
-      fileRows = isExcelFile(file) ? await parseExcel(file) : parseCsv(await file.text());
+      fileRows = isExcelFile(file) ? await parseExcel(file) : await parseCsvFile(file);
     } catch {
       setFormatError("Impossible de lire ce fichier — vérifiez qu'il s'agit bien d'un CSV ou d'un Excel valide.");
       return;

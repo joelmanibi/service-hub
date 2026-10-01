@@ -41,7 +41,7 @@ type MetaRowProps = {
   items: PublicReferenceItem[];
 };
 
-function MetaRow({ icon, label, items }: MetaRowProps) {
+export function MetaRow({ icon, label, items }: MetaRowProps) {
   const value = formatMetaValue(items);
 
   return (

@@ -1,13 +1,15 @@
 type UsersHeaderProps = {
   onCreate: () => void;
+  onExport: () => void;
+  isExporting: boolean;
 };
 
 /**
- * En-tête de la page Utilisateurs : titre + bouton d'ouverture de la
- * modale de création. `flex-wrap` pour rester lisible sur mobile
- * (bouton passe sous le titre plutôt que de déborder).
+ * En-tête de la page Utilisateurs : titre + boutons d'ouverture de la
+ * modale de création et d'export CSV. `flex-wrap` pour rester lisible
+ * sur mobile (boutons passent sous le titre plutôt que de déborder).
  */
-export default function UsersHeader({ onCreate }: UsersHeaderProps) {
+export default function UsersHeader({ onCreate, onExport, isExporting }: UsersHeaderProps) {
   return (
     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
       <div>
@@ -17,10 +19,20 @@ export default function UsersHeader({ onCreate }: UsersHeaderProps) {
         </p>
       </div>
 
-      <button type="button" className="btn btn-primary" onClick={onCreate}>
-        <i className="bi bi-person-plus me-2" aria-hidden="true" />
-        Nouvel utilisateur
-      </button>
+      <div className="d-flex gap-2">
+        <button type="button" className="btn btn-outline-secondary" onClick={onExport} disabled={isExporting}>
+          {isExporting ? (
+            <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+          ) : (
+            <i className="bi bi-download me-2" aria-hidden="true" />
+          )}
+          Exporter
+        </button>
+        <button type="button" className="btn btn-primary" onClick={onCreate}>
+          <i className="bi bi-person-plus me-2" aria-hidden="true" />
+          Nouvel utilisateur
+        </button>
+      </div>
     </div>
   );
 }
