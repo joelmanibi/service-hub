@@ -20,6 +20,12 @@ const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
 
+// Derrière le reverse proxy Nginx (même machine) : `req.ip` reprend l'IP
+// réelle du client (X-Forwarded-For) au lieu de 127.0.0.1 — utilisée par
+// les logs et la "dernière utilisation" des clés d'API. Limité à un proxy
+// local (loopback) : un client ne peut pas falsifier son IP par cet en-tête.
+app.set('trust proxy', 'loopback');
+
 const morganStream = {
   write: (message) => logger.http(message.trim()),
 };

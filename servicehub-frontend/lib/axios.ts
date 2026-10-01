@@ -11,8 +11,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/a
 
 // Origine du backend (sans le préfixe /api/v1) : les fichiers téléversés
 // (ex: logo de Service) sont servis par Express à la racine (/uploads/...),
-// hors du préfixe API — cf. backend/src/app.js.
-export const API_ORIGIN = new URL(API_BASE_URL).origin;
+// hors du préfixe API — cf. backend/src/app.js. NEXT_PUBLIC_API_URL peut
+// être relative (/api/v1, derrière le reverse proxy) : l'origine est alors
+// vide et les liens /uploads/... restent relatifs au domaine de l'admin.
+export const API_ORIGIN = /^https?:\/\//i.test(API_BASE_URL) ? new URL(API_BASE_URL).origin : "";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -1,8 +1,16 @@
 /**
  * Accès en lecture seule à l'API publique de ServiceHub (backend
- * `GET /public/services`, sans authentification). N'est appelé que côté
- * serveur (Server Components) — `API_URL` n'a donc pas besoin du préfixe
- * `NEXT_PUBLIC_` : jamais inclus dans le bundle envoyé au navigateur.
+ * `GET /public/services`, sans authentification).
+ *
+ * Deux URL distinctes :
+ *  - `API_SERVER_URL` (variable `API_SERVER_URL`) : utilisée par le
+ *    serveur Next (Server Components, Server Actions) pour appeler le
+ *    backend — une URL interne convient (ex. http://127.0.0.1:5002/api/v1).
+ *    Jamais envoyée au navigateur.
+ *  - `NEXT_PUBLIC_API_URL` : URL de l'API telle que le NAVIGATEUR la voit
+ *    (ex. /api/v1 derrière le reverse proxy, ou une URL absolue publique) ;
+ *    sert à construire les liens vers les fichiers téléversés (logos,
+ *    schémas d'architecture), cf. `API_ORIGIN`. Injectée au build.
  */
 
 export type PublicServiceType = {
@@ -54,14 +62,20 @@ interface ApiEnvelope<T> {
   data: T;
 }
 
-export const API_URL = process.env.API_URL ?? "http://localhost:3005/api/v1";
+// `API_URL` : ancien nom de la variable serveur, accepté pour ne pas casser
+// un .env existant.
+export const API_SERVER_URL = process.env.API_SERVER_URL ?? process.env.API_URL ?? "http://localhost:3005/api/v1";
 
-// Origine du backend (sans le préfixe /api/v1) : les logos de service sont
-// servis par Express à la racine (/uploads/...), hors du préfixe API.
-export const API_ORIGIN = new URL(API_URL).origin;
+const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3005/api/v1";
+
+// Origine publique du backend (sans le préfixe /api/v1) : les fichiers
+// téléversés sont servis par Express à la racine (/uploads/...), hors du
+// préfixe API. Chaîne vide si NEXT_PUBLIC_API_URL est relative (/api/v1) :
+// les liens restent alors relatifs au domaine du site (reverse proxy).
+export const API_ORIGIN = /^https?:\/\//i.test(PUBLIC_API_URL) ? new URL(PUBLIC_API_URL).origin : "";
 
 export async function getPublicServices(): Promise<PublicService[]> {
-  const response = await fetch(`${API_URL}/public/services`);
+  const response = await fetch(`${API_SERVER_URL}/public/services`);
 
   if (!response.ok) {
     throw new Error("Impossible de charger le catalogue de services.");
@@ -74,7 +88,7 @@ export async function getPublicServices(): Promise<PublicService[]> {
 // Renvoie `null` si le service n'existe pas (ou si `id` n'est pas un
 // identifiant valide) — la page appelante déclenche alors `notFound()`.
 export async function getPublicService(id: string): Promise<PublicService | null> {
-  const response = await fetch(`${API_URL}/public/services/${id}`);
+  const response = await fetch(`${API_SERVER_URL}/public/services/${id}`);
 
   if (!response.ok) {
     return null;
@@ -86,7 +100,7 @@ export async function getPublicService(id: string): Promise<PublicService | null
 
 // Toutes les instances, tous services confondus (page "Instances").
 export async function getPublicInstances(): Promise<PublicInstance[]> {
-  const response = await fetch(`${API_URL}/public/instances`);
+  const response = await fetch(`${API_SERVER_URL}/public/instances`);
 
   if (!response.ok) {
     throw new Error("Impossible de charger la liste des instances.");
@@ -97,7 +111,7 @@ export async function getPublicInstances(): Promise<PublicInstance[]> {
 }
 
 export async function getPublicServiceInstances(id: string): Promise<PublicInstance[]> {
-  const response = await fetch(`${API_URL}/public/services/${id}/instances`);
+  const response = await fetch(`${API_SERVER_URL}/public/services/${id}/instances`);
 
   if (!response.ok) {
     throw new Error("Impossible de charger les instances de ce service.");
@@ -175,7 +189,7 @@ export async function getPublicServiceInstanceSensitive(
   accessToken: string
 ): Promise<SensitiveResult> {
   try {
-    const response = await fetch(`${API_URL}/public/services/${serviceId}/instances/${instanceId}/sensitive`, {
+    const response = await fetch(`${API_SERVER_URL}/public/services/${serviceId}/instances/${instanceId}/sensitive`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
     });
@@ -196,7 +210,7 @@ export async function getPublicServiceInstance(
   serviceId: string,
   instanceId: string
 ): Promise<PublicInstanceDetail | null> {
-  const response = await fetch(`${API_URL}/public/services/${serviceId}/instances/${instanceId}`);
+  const response = await fetch(`${API_SERVER_URL}/public/services/${serviceId}/instances/${instanceId}`);
 
   if (!response.ok) {
     return null;

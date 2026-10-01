@@ -1,6 +1,6 @@
 "use server";
 
-import { API_URL } from "@/lib/publicApi";
+import { API_SERVER_URL } from "@/lib/publicApi";
 import { clearSession, getRefreshToken, getSession, saveSession } from "@/lib/session";
 
 /**
@@ -26,7 +26,7 @@ export async function requestOtpAction(identifier: string): Promise<AuthActionRe
   if (!value) return { ok: false, error: "Saisissez votre identifiant ou votre email." };
 
   try {
-    const response = await fetch(`${API_URL}/auth/request-otp`, {
+    const response = await fetch(`${API_SERVER_URL}/auth/request-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier: value }),
@@ -43,7 +43,7 @@ export async function requestOtpAction(identifier: string): Promise<AuthActionRe
 
 export async function verifyOtpAction(identifier: string, code: string): Promise<AuthActionResult> {
   try {
-    const response = await fetch(`${API_URL}/auth/verify-otp`, {
+    const response = await fetch(`${API_SERVER_URL}/auth/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier: identifier.trim(), code: code.trim() }),
@@ -67,7 +67,7 @@ export async function logoutAction(): Promise<void> {
   // Révocation du refresh token côté backend (au mieux) — la session locale
   // est supprimée dans tous les cas.
   if (session && refreshToken) {
-    await fetch(`${API_URL}/auth/logout`, {
+    await fetch(`${API_SERVER_URL}/auth/logout`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.accessToken}` },
       body: JSON.stringify({ refreshToken }),

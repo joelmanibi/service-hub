@@ -168,16 +168,19 @@ npm ci
 Créer `servicehub-frontend/.env` :
 
 ```ini
-NEXT_PUBLIC_API_URL=https://api.votre-domaine.tld/api/v1
+# Derrière le reverse proxy (cf. section Nginx) : URL relative au domaine de l'admin
+NEXT_PUBLIC_API_URL=/api/v1
 ```
 
-> `NEXT_PUBLIC_*` est injecté dans le bundle envoyé au navigateur : mettre l'URL **publique** de l'API (celle que les navigateurs des utilisateurs appelleront), pas une URL interne.
+> `NEXT_PUBLIC_*` est injecté dans le bundle envoyé au navigateur **au moment du build** : mettre l'URL de l'API telle que les navigateurs la voient, jamais une URL interne (`127.0.0.1`). Une URL relative (`/api/v1`) est recommandée derrière le reverse proxy ; une URL absolue (`https://api.votre-domaine.tld/api/v1`) fonctionne aussi. Toute modification impose de **refaire le build**.
 
 Build de production :
 
 ```bash
 npm run build
 ```
+
+> Le script `build` des deux applications Next utilise **webpack** (`next build --webpack`) et non Turbopack : sur un serveur dont la glibc est antérieure à 2.29 (RHEL/CentOS 7 et 8…), le compilateur natif SWC ne se charge pas et Next bascule sur sa version WebAssembly, que seul webpack sait utiliser. Les avertissements `Attempted to load @next/swc-linux-x64-gnu … GLIBC_2.29 not found` sont alors **attendus et sans conséquence** : le build est simplement plus lent. Lancer `npm run build` tel quel (inutile d'ajouter `-- --webpack`).
 
 ---
 
@@ -191,16 +194,65 @@ npm ci
 Créer `service-hub-public/.env.local` (ou `.env`) :
 
 ```ini
-API_URL=http://127.0.0.1:3005/api/v1
+# URL utilisée par le SERVEUR Next pour appeler le backend (interne)
+API_SERVER_URL=http://127.0.0.1:5002/api/v1
+# URL vue par le NAVIGATEUR (liens vers les logos/schémas /uploads/...)
+NEXT_PUBLIC_API_URL=/api/v1
 ```
 
-> Contrairement à l'admin, cette variable n'a pas le préfixe `NEXT_PUBLIC_` : elle n'est utilisée que côté serveur (Server Components), donc une URL interne/locale vers l'API convient (pas besoin qu'elle soit publiquement accessible).
+> Deux URL distinctes :
+> - `API_SERVER_URL` n'est utilisée que côté serveur (pages, connexion, informations sensibles) : une URL interne vers le backend convient, elle n'est jamais envoyée au navigateur. (L'ancien nom `API_URL` reste accepté.)
+> - `NEXT_PUBLIC_API_URL` est injectée dans le bundle du navigateur **au build** : URL publique de l'API, relative (`/api/v1`) derrière le reverse proxy. Toute modification impose de **refaire le build**.
 
 Build de production :
 
 ```bash
 npm run build
 ```
+
+### Reverse proxy Nginx
+
+Sur chaque domaine (catalogue public et admin), Nginx doit router vers le
+backend **à la fois** `/api/v1/` et `/uploads/` (logos de service, schémas
+d'architecture — servis par le backend à la racine, hors du préfixe API) ;
+tout le reste va à l'application Next. `proxy_pass` **sans chemin** après le
+port : l'URL est transmise telle quelle (`/api/v1/...` reste `/api/v1/...`,
+conforme à `API_PREFIX=/api/v1`).
+
+```nginx
+server {
+    listen 80;
+    server_name pp-servicehub.itn.intraorange;   # admin : admin.pp-servicehub.itn.intraorange
+
+    location / {
+        proxy_pass http://127.0.0.1:3006;        # admin : 127.0.0.1:3005
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    location /api/v1/ {
+        proxy_pass http://127.0.0.1:5002;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 10m;                # téléversement d'images
+    }
+
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:5002;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+Puis `nginx -t && systemctl reload nginx`.
 
 ---
 
