@@ -1,6 +1,9 @@
 const { Op } = require('sequelize');
 
 const db = require('../../database');
+const { publicSiteUrl } = require('../../config/env');
+const logger = require('../../config/logger');
+const emailService = require('../../shared/utils/emailService');
 const ApiError = require('../../shared/utils/ApiError');
 const { HTTP_STATUS, ROLES } = require('../../shared/constants');
 
@@ -143,6 +146,21 @@ async function create(data) {
 
     return user;
   });
+
+  // Email de bienvenue (lien vers le catalogue public) envoyé en arrière-
+  // plan : un échec d'envoi (SMTP indisponible...) est journalisé mais
+  // n'annule jamais la création du compte, déjà enregistrée.
+  emailService
+    .sendAccountCreatedEmail({
+      to: data.email,
+      name: data.firstName,
+      login: data.login,
+      publicUrl: publicSiteUrl,
+    })
+    .then(() => logger.info(`Email de création de compte envoyé à ${data.email}`))
+    .catch((error) =>
+      logger.error(`Échec de l'envoi de l'email de création de compte à ${data.email} : ${error.message}`)
+    );
 
   // Re-chargé avec son Credential (login) : même forme de réponse que
   // list/getById, sans quoi la création renverrait un utilisateur sans

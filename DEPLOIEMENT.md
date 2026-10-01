@@ -94,6 +94,11 @@ SMTP_FROM=ServiceHub <no-reply@votre-domaine.tld>
 # que le temps que le certificat soit renouvelé, jamais en usage normal :
 # SMTP_TLS_REJECT_UNAUTHORIZED=false
 
+# --- Catalogue public ---
+# Adresse du site service-hub-public, envoyée par email à chaque
+# utilisateur dont le compte vient d'être créé (lien "Accéder au catalogue").
+PUBLIC_SITE_URL=https://pp-servicehub.itn.intraorange
+
 # --- Logging ---
 LOG_LEVEL=info
 

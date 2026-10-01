@@ -50,6 +50,10 @@ module.exports = {
     },
   },
 
+  // Adresse publique du catalogue des services (site service-hub-public),
+  // communiquée dans l'email envoyé à la création d'un compte.
+  publicSiteUrl: process.env.PUBLIC_SITE_URL || 'http://localhost:3001',
+
   cors: {
     origin: process.env.CORS_ORIGIN || '*',
   },

@@ -44,6 +44,69 @@ async function sendOtpEmail({ to, name, code }) {
   await sendMail({ to, subject, text, html });
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Informe un utilisateur que son compte ServiceHub vient d'être créé et
+ * lui donne l'adresse du catalogue public des services. Pas de mot de
+ * passe : la connexion se fait par code envoyé par email (OTP), avec le
+ * login ou l'adresse email indiqués ici.
+ */
+async function sendAccountCreatedEmail({ to, name, login, publicUrl }) {
+  const subject = 'Votre compte ServiceHub a été créé';
+
+  const text = [
+    `Bonjour ${name},`,
+    '',
+    'Votre compte ServiceHub vient d’être créé.',
+    '',
+    'Vous pouvez dès maintenant consulter le catalogue des services :',
+    publicUrl,
+    '',
+    `Pour accéder aux informations réservées, cliquez sur « Se connecter » et saisissez votre identifiant (${login}) ou votre adresse email : un code de connexion vous sera envoyé par email. Aucun mot de passe n’est nécessaire.`,
+    '',
+    "Si vous n'attendiez pas ce message, vous pouvez l'ignorer.",
+  ].join('\n');
+
+  const safeName = escapeHtml(name);
+  const safeLogin = escapeHtml(login);
+  const safeUrl = escapeHtml(publicUrl);
+
+  const html = `
+<div style="font-family: Arial, Helvetica, sans-serif; color: #000; max-width: 560px; margin: 0 auto;">
+  <div style="border-top: 4px solid #ff7900; padding: 24px 0 8px;">
+    <p style="font-size: 18px; font-weight: bold; margin: 0 0 16px;">ServiceHub</p>
+    <p>Bonjour ${safeName},</p>
+    <p>Votre compte ServiceHub vient d’être créé.</p>
+    <p>Vous pouvez dès maintenant consulter le <strong>catalogue des services</strong> :</p>
+    <p style="margin: 24px 0;">
+      <a href="${safeUrl}" style="background: #ff7900; color: #000; text-decoration: none; font-weight: bold; padding: 12px 20px; display: inline-block;">
+        Accéder au catalogue
+      </a>
+    </p>
+    <p style="font-size: 13px; color: #595959;">Ou copiez ce lien dans votre navigateur : <a href="${safeUrl}">${safeUrl}</a></p>
+    <p>
+      Pour accéder aux informations réservées, cliquez sur <strong>« Se connecter »</strong> et saisissez votre
+      identifiant (<strong>${safeLogin}</strong>) ou votre adresse email : un code de connexion vous sera envoyé par
+      email. Aucun mot de passe n’est nécessaire.
+    </p>
+    <p style="font-size: 13px; color: #595959; margin-top: 32px;">
+      Si vous n'attendiez pas ce message, vous pouvez l'ignorer.
+    </p>
+  </div>
+</div>`.trim();
+
+  await sendMail({ to, subject, text, html });
+}
+
 module.exports = {
   sendOtpEmail,
+  sendAccountCreatedEmail,
 };
