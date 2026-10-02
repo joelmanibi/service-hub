@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import ModalShell from "@/components/users/ModalShell";
 import ApiKeyFormModal from "./ApiKeyFormModal";
 import ApiKeyCreatedModal from "./ApiKeyCreatedModal";
+import ApiKeyRequestsSection from "./ApiKeyRequestsSection";
+import RevealApiKeyModal from "./RevealApiKeyModal";
 import {
   createApiKey,
   deleteApiKey,
+  listApiKeyRequests,
   listApiKeys,
   revokeApiKey,
   type ApiKey,
+  type ApiKeyRequest,
   type ApiKeyStatus,
   type CreateApiKeyPayload,
   type CreatedApiKey,
@@ -20,7 +24,8 @@ type ModalState =
   | { type: "create" }
   | { type: "created"; created: CreatedApiKey }
   | { type: "revoke"; apiKey: ApiKey }
-  | { type: "delete"; apiKey: ApiKey };
+  | { type: "delete"; apiKey: ApiKey }
+  | { type: "reveal"; apiKey: ApiKey };
 
 const STATUS_BADGE: Record<ApiKeyStatus, { label: string; className: string }> = {
   active: { label: "Active", className: "text-bg-success" },
@@ -92,14 +97,16 @@ function ConfirmModal({ title, body, confirmLabel, confirmVariant, onClose, onCo
 }
 
 /**
- * Panneau "Clés d'API" de l'onglet Paramètres (ADMIN uniquement) : clés
- * utilisées par les applications tierces pour appeler l'API d'intégration
- * (/api/v1/integration/...). Génération (la clé n'est affichée qu'une
- * fois), suivi de la dernière utilisation, révocation (effet immédiat) et
- * suppression.
+ * Panneau "Clés d'API" de l'onglet Paramètres (ADMIN uniquement) : demandes
+ * de clés faites depuis le catalogue public (approbation / refus), puis
+ * clés utilisées par les applications tierces pour appeler l'API
+ * d'intégration (/api/v1/integration/...) — génération directe, affichage
+ * (journalisé), suivi de la dernière utilisation, révocation (effet
+ * immédiat) et suppression.
  */
 export default function ApiKeysPanel() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [requests, setRequests] = useState<ApiKeyRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -109,7 +116,9 @@ export default function ApiKeysPanel() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      setApiKeys(await listApiKeys());
+      const [keys, keyRequests] = await Promise.all([listApiKeys(), listApiKeyRequests()]);
+      setApiKeys(keys);
+      setRequests(keyRequests);
     } catch (error) {
       setLoadError(getApiErrorMessage(error, "Impossible de charger les clés d'API."));
     } finally {
@@ -121,9 +130,12 @@ export default function ApiKeysPanel() {
   // mises à jour d'état n'interviennent qu'à la résolution de la requête.
   useEffect(() => {
     let cancelled = false;
-    listApiKeys()
-      .then((items) => {
-        if (!cancelled) setApiKeys(items);
+    Promise.all([listApiKeys(), listApiKeyRequests()])
+      .then(([keys, keyRequests]) => {
+        if (!cancelled) {
+          setApiKeys(keys);
+          setRequests(keyRequests);
+        }
       })
       .catch((error) => {
         if (!cancelled) setLoadError(getApiErrorMessage(error, "Impossible de charger les clés d'API."));
@@ -192,6 +204,18 @@ export default function ApiKeysPanel() {
         </div>
       )}
 
+      {!isLoading && !loadError && (
+        <ApiKeyRequestsSection
+          requests={requests}
+          onChanged={async (message) => {
+            showNotice(message);
+            await loadData();
+          }}
+        />
+      )}
+
+      {!isLoading && <h2 className="h5 fw-semibold mb-3">Clés</h2>}
+
       {isLoading ? (
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -217,6 +241,7 @@ export default function ApiKeysPanel() {
                 <th scope="col">Application</th>
                 <th scope="col">Clé</th>
                 <th scope="col">Statut</th>
+                <th scope="col">Propriétaire</th>
                 <th scope="col">Créée</th>
                 <th scope="col">Expiration</th>
                 <th scope="col">Dernière utilisation</th>
@@ -241,6 +266,16 @@ export default function ApiKeysPanel() {
                       <span className={`badge rounded-pill ${badge.className}`}>{badge.label}</span>
                     </td>
                     <td className="small">
+                      {apiKey.owner ? (
+                        <>
+                          {apiKey.owner.name}
+                          <div className="text-body-secondary">{apiKey.owner.email}</div>
+                        </>
+                      ) : (
+                        <span className="text-body-secondary">—</span>
+                      )}
+                    </td>
+                    <td className="small">
                       {dateFormatter.format(new Date(apiKey.createdAt))}
                       {apiKey.createdBy && <div className="text-body-secondary">par {apiKey.createdBy.name}</div>}
                     </td>
@@ -258,6 +293,17 @@ export default function ApiKeysPanel() {
                       )}
                     </td>
                     <td className="text-end text-nowrap">
+                      {apiKey.revealable && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary me-2"
+                          aria-label={`Afficher la clé ${apiKey.name}`}
+                          title="Afficher la clé"
+                          onClick={() => setModal({ type: "reveal", apiKey })}
+                        >
+                          <i className="bi bi-eye" aria-hidden="true" />
+                        </button>
+                      )}
                       {apiKey.status === "active" && (
                         <button
                           type="button"
@@ -288,6 +334,8 @@ export default function ApiKeysPanel() {
       {modal?.type === "create" && <ApiKeyFormModal onClose={closeModal} onSubmit={handleCreate} />}
 
       {modal?.type === "created" && <ApiKeyCreatedModal created={modal.created} onClose={closeModal} />}
+
+      {modal?.type === "reveal" && <RevealApiKeyModal apiKey={modal.apiKey} onClose={closeModal} />}
 
       {modal?.type === "revoke" && (
         <ConfirmModal

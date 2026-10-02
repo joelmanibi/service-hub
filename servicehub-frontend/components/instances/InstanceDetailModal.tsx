@@ -7,6 +7,7 @@ import StatusDot from "@/components/common/StatusDot";
 import { getInstanceArchitectureImageUrl, type ManagedInstance } from "@/services/instances.service";
 import type { CatalogService } from "@/services/catalog.service";
 import { accentFromSeed } from "@/lib/accentColor";
+import InstanceEscalation from "@/components/escalation/InstanceEscalation";
 import styles from "./InstanceDetailModal.module.scss";
 
 type InstanceDetailModalProps = {
@@ -227,6 +228,10 @@ export default function InstanceDetailModal({ instance, services, onClose }: Ins
               ) : (
                 <p className="text-body-secondary small mb-0">Aucun niveau de support assigné.</p>
               )}
+            </SheetSection>
+
+            <SheetSection title="Matrice d'escalade">
+              <InstanceEscalation podId={instance.podId} />
             </SheetSection>
 
             <SheetSection title="Commentaires">

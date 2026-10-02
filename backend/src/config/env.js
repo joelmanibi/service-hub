@@ -53,6 +53,16 @@ module.exports = {
   // Adresse publique du catalogue des services (site service-hub-public),
   // communiquée dans l'email envoyé à la création d'un compte.
   publicSiteUrl: process.env.PUBLIC_SITE_URL || 'http://localhost:3001',
+  // Adresse de l'administration (lien des emails envoyés aux ADMIN, ex.
+  // nouvelle demande de clé d'API). À défaut, l'origine CORS (= l'admin).
+  adminSiteUrl:
+    process.env.ADMIN_SITE_URL ||
+    (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*' ? process.env.CORS_ORIGIN : 'http://localhost:3000'),
+
+  // Secret de chiffrement des clés d'API (ré-affichage par un ADMIN ou par
+  // le propriétaire de la clé) — cf. shared/utils/secretBox.js. Facultatif :
+  // dérivé de JWT_SECRET s'il est absent.
+  apiKeyEncryptionSecret: process.env.API_KEY_ENCRYPTION_SECRET || null,
 
   cors: {
     origin: process.env.CORS_ORIGIN || '*',

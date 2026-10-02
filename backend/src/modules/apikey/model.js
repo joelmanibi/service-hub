@@ -1,13 +1,18 @@
 /**
- * Modèle Sequelize du module ApiKey.
+ * Modèles Sequelize du module ApiKey.
  *
- *  - ApiKey  clé d'API d'une application tierce (accès en lecture au
- *            module Integration). Générée depuis l'administration : la clé
- *            en clair n'est affichée qu'une seule fois à sa création,
- *            seule son empreinte SHA-256 (`keyHash`) est conservée, avec
- *            ses premiers caractères (`keyPrefix`) pour l'identifier.
- *            Une clé révoquée (`revokedAt`) ou expirée (`expiresAt`) est
- *            refusée par middlewares/apiKeyGuard.js.
+ *  - ApiKey         clé d'API d'une application tierce (accès en lecture au
+ *                   module Integration). Authentification par empreinte
+ *                   SHA-256 (`keyHash`) ; copie chiffrée (`keyEncrypted`,
+ *                   AES-256-GCM) pour que la clé reste affichable par les
+ *                   ADMIN et par son propriétaire (`ownerUserId`) — et par
+ *                   personne d'autre. Une clé révoquée (`revokedAt`) ou
+ *                   expirée (`expiresAt`) est refusée par
+ *                   middlewares/apiKeyGuard.js.
+ *  - ApiKeyRequest  demande de clé faite depuis le site public par un
+ *                   utilisateur connecté (`requesterId`), approuvée (une
+ *                   ApiKey lui est alors attribuée, `apiKeyId`) ou refusée
+ *                   par un ADMIN.
  */
 
 module.exports = (sequelize, DataTypes) => {
@@ -31,7 +36,15 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
+      keyEncrypted: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       createdById: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      ownerUserId: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
@@ -55,9 +68,61 @@ module.exports = (sequelize, DataTypes) => {
     { tableName: 'api_keys' }
   );
 
+  const ApiKeyRequest = sequelize.define(
+    'ApiKeyRequest',
+    {
+      requesterId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      applicationName: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+      },
+      usageDescription: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      // Durée de validité souhaitée, en jours (null = sans expiration).
+      validityDays: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      status: {
+        type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+        allowNull: false,
+        defaultValue: 'pending',
+      },
+      reviewedById: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      reviewedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      rejectionReason: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+      },
+      apiKeyId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+    },
+    { tableName: 'api_key_requests' }
+  );
+
   ApiKey.associate = (models) => {
     ApiKey.belongsTo(models.User, { as: 'createdBy', foreignKey: 'createdById' });
+    ApiKey.belongsTo(models.User, { as: 'owner', foreignKey: 'ownerUserId' });
   };
 
-  return ApiKey;
+  ApiKeyRequest.associate = (models) => {
+    ApiKeyRequest.belongsTo(models.User, { as: 'requester', foreignKey: 'requesterId' });
+    ApiKeyRequest.belongsTo(models.User, { as: 'reviewedBy', foreignKey: 'reviewedById' });
+    ApiKeyRequest.belongsTo(ApiKey, { as: 'apiKey', foreignKey: 'apiKeyId' });
+  };
+
+  return { ApiKey, ApiKeyRequest };
 };

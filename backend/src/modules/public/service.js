@@ -15,6 +15,7 @@ const {
   InstanceSupportLevel,
   Inventaire,
 } = require('../../database');
+const escalationService = require('../escalation/service');
 const ApiError = require('../../shared/utils/ApiError');
 const { HTTP_STATUS } = require('../../shared/constants');
 
@@ -249,7 +250,7 @@ async function getServiceInstanceById(serviceId, instanceId) {
 async function getServiceInstanceSensitive(serviceId, instanceId) {
   const instance = await Instance.findOne({
     where: { id: instanceId, serviceId },
-    attributes: ['id'],
+    attributes: ['id', 'podId'],
     include: [
       { model: Client, as: 'client', attributes: ['id', 'name'] },
       {
@@ -280,6 +281,8 @@ async function getServiceInstanceSensitive(serviceId, instanceId) {
   }
 
   return {
+    // Matrice d'escalade GOS : managériale (commune) + technique (POD de l'instance).
+    escalation: await escalationService.getMatrixForPod(instance.podId),
     client: toReference(instance.client),
     composants: instance.composants.map((composant) => ({
       id: composant.id,

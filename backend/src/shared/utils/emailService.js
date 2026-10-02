@@ -106,7 +106,109 @@ async function sendAccountCreatedEmail({ to, name, login, publicUrl }) {
   await sendMail({ to, subject, text, html });
 }
 
+// Gabarit HTML commun des emails de notification (bandeau orange, bouton
+// d'action facultatif). `bodyHtml` doit déjà être échappé.
+function notificationHtml(bodyHtml, action) {
+  const button = action
+    ? `<p style="margin: 24px 0;">
+      <a href="${escapeHtml(action.url)}" style="background: #ff7900; color: #000; text-decoration: none; font-weight: bold; padding: 12px 20px; display: inline-block;">
+        ${escapeHtml(action.label)}
+      </a>
+    </p>
+    <p style="font-size: 13px; color: #595959;">Ou copiez ce lien : <a href="${escapeHtml(action.url)}">${escapeHtml(action.url)}</a></p>`
+    : '';
+
+  return `
+<div style="font-family: Arial, Helvetica, sans-serif; color: #000; max-width: 560px; margin: 0 auto;">
+  <div style="border-top: 4px solid #ff7900; padding: 24px 0 8px;">
+    <p style="font-size: 18px; font-weight: bold; margin: 0 0 16px;">ServiceHub</p>
+    ${bodyHtml}
+    ${button}
+  </div>
+</div>`.trim();
+}
+
+/**
+ * Prévient les administrateurs qu'une demande de clé d'API attend leur
+ * décision (onglet Paramètres → Clés d'API de l'administration).
+ */
+async function sendApiKeyRequestedEmail({ to, requesterName, requesterEmail, applicationName, usageDescription, adminUrl }) {
+  const subject = `Nouvelle demande de clé d'API — ${applicationName}`;
+
+  const text = [
+    'Bonjour,',
+    '',
+    `${requesterName} (${requesterEmail}) demande une clé d'API pour l'application « ${applicationName} ».`,
+    '',
+    'Usage prévu :',
+    usageDescription,
+    '',
+    `Pour l'approuver ou la refuser : ${adminUrl} (Paramètres → Clés d'API).`,
+  ].join('\n');
+
+  const html = notificationHtml(
+    `<p>Bonjour,</p>
+    <p><strong>${escapeHtml(requesterName)}</strong> (${escapeHtml(requesterEmail)}) demande une clé d'API pour l'application
+    <strong>« ${escapeHtml(applicationName)} »</strong>.</p>
+    <p style="margin-bottom: 4px;">Usage prévu :</p>
+    <blockquote style="margin: 0; padding: 8px 12px; border-left: 3px solid #ccc; color: #333; white-space: pre-wrap;">${escapeHtml(usageDescription)}</blockquote>
+    <p>Rendez-vous dans <strong>Paramètres → Clés d'API</strong> pour l'approuver ou la refuser.</p>`,
+    { label: "Ouvrir l'administration", url: adminUrl }
+  );
+
+  await sendMail({ to, subject, text, html });
+}
+
+/**
+ * Informe le demandeur de la décision prise sur sa demande de clé d'API.
+ * La clé elle-même n'est jamais envoyée par email : elle s'affiche, après
+ * connexion, sur la page « Mes clés d'API » du site public.
+ */
+async function sendApiKeyRequestDecisionEmail({ to, name, applicationName, approved, reason, keysUrl }) {
+  const subject = approved
+    ? `Votre clé d'API « ${applicationName} » est disponible`
+    : `Votre demande de clé d'API « ${applicationName} » a été refusée`;
+
+  const text = approved
+    ? [
+        `Bonjour ${name},`,
+        '',
+        `Votre demande de clé d'API pour « ${applicationName} » a été approuvée.`,
+        '',
+        `Connectez-vous au catalogue ServiceHub pour afficher et copier votre clé : ${keysUrl}`,
+        '',
+        'Pour des raisons de sécurité, la clé n’est jamais envoyée par email.',
+      ].join('\n')
+    : [
+        `Bonjour ${name},`,
+        '',
+        `Votre demande de clé d'API pour « ${applicationName} » a été refusée.`,
+        ...(reason ? ['', `Motif : ${reason}`] : []),
+        '',
+        `Vous pouvez consulter vos demandes ou en faire une nouvelle : ${keysUrl}`,
+      ].join('\n');
+
+  const html = approved
+    ? notificationHtml(
+        `<p>Bonjour ${escapeHtml(name)},</p>
+    <p>Votre demande de clé d'API pour <strong>« ${escapeHtml(applicationName)} »</strong> a été <strong>approuvée</strong>.</p>
+    <p>Connectez-vous au catalogue ServiceHub pour afficher et copier votre clé.</p>
+    <p style="font-size: 13px; color: #595959;">Pour des raisons de sécurité, la clé n’est jamais envoyée par email.</p>`,
+        { label: 'Afficher ma clé', url: keysUrl }
+      )
+    : notificationHtml(
+        `<p>Bonjour ${escapeHtml(name)},</p>
+    <p>Votre demande de clé d'API pour <strong>« ${escapeHtml(applicationName)} »</strong> a été <strong>refusée</strong>.</p>
+    ${reason ? `<p>Motif : ${escapeHtml(reason)}</p>` : ''}`,
+        { label: 'Voir mes demandes', url: keysUrl }
+      );
+
+  await sendMail({ to, subject, text, html });
+}
+
 module.exports = {
   sendOtpEmail,
   sendAccountCreatedEmail,
+  sendApiKeyRequestedEmail,
+  sendApiKeyRequestDecisionEmail,
 };

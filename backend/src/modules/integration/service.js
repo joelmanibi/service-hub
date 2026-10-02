@@ -18,6 +18,7 @@ const {
   SupportLevel,
   InstanceSupportLevel,
 } = require('../../database');
+const escalationService = require('../escalation/service');
 const ApiError = require('../../shared/utils/ApiError');
 const { HTTP_STATUS } = require('../../shared/constants');
 
@@ -187,7 +188,13 @@ async function getInstanceById(id) {
     throw new ApiError(HTTP_STATUS.NOT_FOUND, 'Instance introuvable');
   }
 
-  return toIntegrationInstance(instance);
+  // Fiche unitaire : ajoute la matrice d'escalade GOS (managériale commune +
+  // technique du POD). Absente des listes, où elle serait répétée à
+  // l'identique pour chaque instance d'un même POD.
+  return {
+    ...toIntegrationInstance(instance),
+    escalation: await escalationService.getMatrixForPod(instance.podId),
+  };
 }
 
 // Une application externe désigne un POD par son code (ex. "WECA") ou son

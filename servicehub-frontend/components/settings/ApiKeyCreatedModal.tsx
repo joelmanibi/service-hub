@@ -48,8 +48,9 @@ export default function ApiKeyCreatedModal({ created, onClose }: ApiKeyCreatedMo
       <div className="alert alert-warning d-flex gap-2" role="alert">
         <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />
         <div>
-          <strong>Copiez cette clé maintenant.</strong> Elle ne sera plus jamais affichée : en cas de perte, il faudra
-          en générer une nouvelle.
+          <strong>Copiez cette clé maintenant</strong> et transmettez-la uniquement à l&apos;application concernée. Elle
+          reste ré-affichable plus tard par les administrateurs (bouton <i className="bi bi-eye" aria-hidden="true" />{" "}
+          de la liste), chaque affichage étant journalisé.
         </div>
       </div>
 

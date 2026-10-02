@@ -170,7 +170,41 @@ export type PublicInstanceDetail = {
   networks: PublicReferenceItem[];
 };
 
+// Matrice d'escalade GOS (backend modules/escalation) : managériale
+// (commune) + technique (ligne commune « Normal Process » + ligne du POD).
+export type EscalationPhone = { label: string; number: string };
+export type EscalationContact = { name: string; email: string; phones: EscalationPhone[] };
+
+export type EscalationMatrix = {
+  managerial: {
+    intro: string;
+    availability: string;
+    businessHours: string;
+    eds: string;
+    note: string;
+    levels: { level: string; contact: string; phones: EscalationPhone[]; email: string }[];
+  };
+  technical: {
+    normalProcess: {
+      intro: string;
+      cluster: string;
+      countries: string;
+      qualityAnalyst: EscalationContact | null;
+      headOfCluster: EscalationContact | null;
+    };
+    podEscalation: {
+      pod: { id: number; code: string; name: string };
+      countries: string;
+      qualityAnalyst: EscalationContact | null;
+      headOfCluster: EscalationContact | null;
+    } | null;
+    pod: { id: number; code: string; name: string } | null;
+    process: { step: string; target: string }[];
+  };
+};
+
 export type PublicInstanceSensitive = {
+  escalation: EscalationMatrix;
   client: PublicReferenceItem | null;
   composants: PublicInstanceComposant[];
   supportLevels: PublicInstanceSupportLevel[];

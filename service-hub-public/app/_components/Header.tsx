@@ -8,21 +8,27 @@ import { logoutAction } from "../_actions/auth";
 import { useSession } from "./SessionProvider";
 import styles from "./Header.module.scss";
 
-const PLACEHOLDER_NAV_LINKS = ["Documentation", "Aide"] as const;
+const PLACEHOLDER_NAV_LINKS = ["Aide"] as const;
+
+type NavLink = { href: string; label: string; isActive: (path: string) => boolean; authOnly?: boolean };
 
 // "Catalogue" couvre aussi les pages d'un service et ses fiches d'instance
-// (/services/...) ; "Instances" la liste globale (/instances).
-const NAV_LINKS = [
-  { href: "/", label: "Catalogue", isActive: (path: string) => path === "/" || path.startsWith("/services") },
-  { href: "/instances", label: "Instances", isActive: (path: string) => path.startsWith("/instances") },
-] as const;
+// (/services/...) ; "Instances" la liste globale (/instances) ;
+// "Documentation" l'API d'intégration ; "Mes clés d'API" n'apparaît
+// qu'une fois connecté.
+const NAV_LINKS: NavLink[] = [
+  { href: "/", label: "Catalogue", isActive: (path) => path === "/" || path.startsWith("/services") },
+  { href: "/instances", label: "Instances", isActive: (path) => path.startsWith("/instances") },
+  { href: "/documentation", label: "Documentation", isActive: (path) => path.startsWith("/documentation") },
+  { href: "/mes-cles-api", label: "Mes clés d'API", isActive: (path) => path.startsWith("/mes-cles-api"), authOnly: true },
+];
 
 /**
  * Barre de navigation du site public — catalogue consultable sans
- * authentification ; la connexion (bouton à droite) ne sert qu'à afficher
- * les informations sensibles des fiches d'instance. "Documentation"/"Aide"
- * n'ont pas encore de page dédiée : affichées comme entrées désactivées
- * plutôt que des liens morts (`href="#"`).
+ * authentification ; la connexion (bouton à droite) donne accès aux
+ * informations sensibles des fiches d'instance et aux clés d'API. "Aide"
+ * n'a pas encore de page dédiée : affichée comme entrée désactivée plutôt
+ * qu'un lien mort (`href="#"`).
  */
 export default function Header() {
   const pathname = usePathname() ?? "/";
@@ -47,11 +53,11 @@ export default function Header() {
 
         <nav aria-label="Navigation principale">
           <ul className="nav">
-            {NAV_LINKS.map(({ href, label, isActive }) => {
+            {NAV_LINKS.filter((link) => !link.authOnly || user).map(({ href, label, isActive, authOnly }) => {
               const active = isActive(pathname);
 
               return (
-                <li className="nav-item" key={href}>
+                <li className={`nav-item ${authOnly ? "d-none d-md-block" : ""}`} key={href}>
                   <Link
                     href={href}
                     className={`nav-link fw-semibold ${active ? styles.activeLink : "text-body"}`}

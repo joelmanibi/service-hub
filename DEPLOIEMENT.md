@@ -98,6 +98,17 @@ SMTP_FROM=ServiceHub <no-reply@votre-domaine.tld>
 # Adresse du site service-hub-public, envoyée par email à chaque
 # utilisateur dont le compte vient d'être créé (lien "Accéder au catalogue").
 PUBLIC_SITE_URL=https://pp-servicehub.itn.intraorange
+# Adresse de l'administration (lien des emails "nouvelle demande de clé
+# d'API" envoyés aux ADMIN). À défaut : CORS_ORIGIN.
+ADMIN_SITE_URL=https://admin.pp-servicehub.itn.intraorange
+
+# --- Clés d'API ---
+# Secret de chiffrement des clés d'API (ré-affichage par l'ADMIN ou par le
+# propriétaire de la clé). Facultatif — dérivé de JWT_SECRET s'il est
+# absent — mais recommandé : changer ce secret (ou JWT_SECRET à défaut)
+# rend les clés existantes non ré-affichables (elles restent valides).
+# Générer comme JWT_SECRET.
+API_KEY_ENCRYPTION_SECRET=UNE_AUTRE_CHAINE_ALEATOIRE_LONGUE
 
 # --- Logging ---
 LOG_LEVEL=info

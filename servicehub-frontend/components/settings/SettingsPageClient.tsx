@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ApiKeysPanel from "./ApiKeysPanel";
+import EscalationPanel from "@/components/escalation/EscalationPanel";
 import { getStoredUser } from "@/lib/session";
 import TypeClientsPanel from "./TypeClientsPanel";
 import CountriesPanel from "./CountriesPanel";
@@ -21,6 +22,7 @@ const TABS = [
   { id: "networks", label: "Réseaux" },
   { id: "pods", label: "Pods" },
   { id: "support-levels", label: "Niveaux de support" },
+  { id: "escalation", label: "Matrice d'escalade" },
 ] as const;
 
 // Onglet réservé aux ADMIN (le backend refuse /api-keys aux autres rôles).
@@ -76,6 +78,7 @@ export default function SettingsPageClient() {
       {activeTab === "networks" && <NetworksPanel />}
       {activeTab === "pods" && <PodsPanel />}
       {activeTab === "support-levels" && <SupportLevelsPanel />}
+      {activeTab === "escalation" && <EscalationPanel />}
       {activeTab === "api-keys" && isAdmin && <ApiKeysPanel />}
     </div>
   );

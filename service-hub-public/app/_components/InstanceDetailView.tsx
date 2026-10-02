@@ -10,6 +10,7 @@ import type {
 import { API_ORIGIN } from "@/lib/publicApi";
 import Header from "./Header";
 import LockedContent from "./LockedContent";
+import EscalationMatrix from "./EscalationMatrix";
 import { getStatusDotVariant } from "./instanceStatus";
 import styles from "./InstanceDetailView.module.scss";
 
@@ -439,6 +440,17 @@ export default function InstanceDetailView({ instance, sensitive }: InstanceDeta
               </dl>
             </SectionCard>
           </aside>
+        </div>
+
+        <div className="mt-4">
+          <SectionCard icon="bi-diagram-2" title="Matrice d'escalade">
+            {renderSensitive(
+              (value) => (
+                <EscalationMatrix matrix={value.escalation} />
+              ),
+              "Connectez-vous pour afficher la matrice d'escalade GOS (contacts managériaux et techniques du POD de l'instance)."
+            )}
+          </SectionCard>
         </div>
       </main>
     </div>

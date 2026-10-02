@@ -126,13 +126,32 @@ support compris.
 
 ### Gestion des clés
 
-Les clés sont générées depuis l'administration : **Paramètres → Clés d'API**
-(onglet réservé aux ADMIN). Une clé est créée pour une application, avec une
-validité (30 jours, 90 jours, 1 an ou sans expiration) ; elle n'est affichée
-**qu'une seule fois** à sa création — seule son empreinte SHA-256 est stockée
-(table `api_keys`). La liste indique pour chaque clé son statut (active,
-révoquée, expirée) et sa dernière utilisation (date, IP). Révoquer une clé
-coupe l'accès de l'application immédiatement.
+La documentation complète destinée aux développeurs des applications
+externes (authentification, endpoints, paramètres, exemples curl /
+PowerShell / JavaScript / Python, modèle de données, erreurs) est publiée
+sur le catalogue public : **/documentation**.
+
+**Demande de clé (parcours standard)** : l'utilisateur se connecte au
+catalogue public, ouvre **Mes clés d'API** (`/mes-cles-api`) et fait une
+demande (application, usage prévu, validité). Les ADMIN sont prévenus par
+email et l'approuvent ou la refusent dans **Paramètres → Clés d'API** ;
+le demandeur est prévenu par email. La clé approuvée est attribuée au
+demandeur : **seuls lui et les ADMIN peuvent l'afficher** (copie chiffrée
+AES-256-GCM, cf. `API_KEY_ENCRYPTION_SECRET` ; chaque affichage est
+journalisé). La clé n'est jamais envoyée par email.
+
+Endpoints correspondants (JWT utilisateur) : `POST /api/v1/api-key-requests`,
+`GET /api/v1/api-key-requests/mine`, `POST /api/v1/api-key-requests/:id/cancel`,
+`GET /api/v1/api-keys/mine`, `GET /api/v1/api-keys/:id/reveal` (propriétaire ou
+ADMIN) ; ADMIN : `GET /api/v1/api-key-requests`, `POST /api/v1/api-key-requests/:id/approve`,
+`POST /api/v1/api-key-requests/:id/reject`.
+
+Un ADMIN peut aussi générer une clé directement dans **Paramètres → Clés
+d'API**. L'authentification se fait par l'empreinte SHA-256 de la clé (table
+`api_keys`). La liste indique pour chaque clé son propriétaire, son statut
+(active, révoquée, expirée) et sa dernière utilisation (date, IP). Révoquer
+une clé coupe l'accès de l'application immédiatement. Les clés créées avant
+la migration `20261002090000` ne sont pas ré-affichables.
 
 Endpoints d'administration correspondants (JWT ADMIN) : `GET /api/v1/api-keys`,
 `POST /api/v1/api-keys`, `POST /api/v1/api-keys/:id/revoke`,

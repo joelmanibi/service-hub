@@ -1,0 +1,221 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (min-width: 992px) {
+  .layout {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+/* Sommaire collé sous le header (desktop uniquement). */
+.toc {
+  position: sticky;
+  top: 5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  font-size: 0.875rem;
+}
+
+.toc a {
+  display: block;
+  padding: 0.3rem 0.75rem;
+  color: var(--bs-secondary-color);
+  text-decoration: none;
+  border-left: 2px solid var(--bs-border-color);
+}
+
+.toc a:hover {
+  color: var(--bs-primary);
+  border-left-color: var(--bs-primary);
+}
+
+.tocSub {
+  padding-left: 1.5rem !important;
+  font-size: 0.8125rem;
+}
+
+.content {
+  min-width: 0;
+  max-width: 860px;
+}
+
+.content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 3rem 0 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bs-border-color);
+  scroll-margin-top: 5rem;
+}
+
+.content h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+  scroll-margin-top: 5rem;
+}
+
+.content p,
+.content li {
+  line-height: 1.65;
+}
+
+.content :not(pre) > code {
+  font-size: 0.85em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+}
+
+.hero {
+  padding: 2rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #000 0%, #2b2b2b 100%);
+  color: #fff;
+}
+
+.heroBadge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--bs-primary);
+  color: #000;
+}
+
+/* Ligne "MÉTHODE  /chemin" d'un endpoint. */
+.endpoint {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-body-bg);
+  font-family: var(--bs-font-monospace);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.method {
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  background-color: #198754;
+  color: #fff;
+}
+
+.paramTable {
+  font-size: 0.875rem;
+}
+
+.paramTable code {
+  white-space: nowrap;
+}
+
+.step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stepNumber {
+  flex: 0 0 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background-color: var(--bs-primary);
+  color: #000;
+}
+
+/* Blocs de code */
+.codeBlock {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #2b2b2b;
+  margin-bottom: 1rem;
+}
+
+.codeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.75rem;
+  background-color: #2b2b2b;
+  color: #ccc;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.copyButton {
+  border: 0;
+  background: transparent;
+  color: #ccc;
+  font-size: 0.75rem;
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+.copyButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.code {
+  margin: 0;
+  padding: 1rem;
+  background-color: #1b1b1b;
+  color: #f1f1f1;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.tab {
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-secondary-color);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
+
+.tabActive {
+  border-color: var(--bs-primary);
+  background-color: var(--bs-primary);
+  color: #000;
+}
+
+.callout {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--bs-primary);
+  background-color: var(--bs-tertiary-bg);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
