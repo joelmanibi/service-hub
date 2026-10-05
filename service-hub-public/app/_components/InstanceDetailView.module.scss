@@ -97,11 +97,18 @@
   flex: 0 0 9rem;
 }
 
-.chip {
+/* Étiquette (environnement, hébergement, réseau, plateforme). Utilisée avec
+   `.badge` de Boosted, qui force un texte blanc (--bs-badge-color: #fff) :
+   la variable est redéfinie et la spécificité renforcée (`.badge.chip`)
+   pour que la couleur s'applique quel que soit l'ordre de chargement des
+   feuilles de style. Fond --bs-secondary-bg (#eee) : se détache du fond
+   blanc des cartes, contrairement à --bs-tertiary-bg (#fafafa). */
+:global(.badge).chip {
+  --bs-badge-color: var(--bs-body-color);
   font-weight: 500;
-  background-color: var(--bs-tertiary-bg);
-  border: 1px solid var(--bs-border-color);
   color: var(--bs-body-color);
+  background-color: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
 }
 
 .composant {
