@@ -40,7 +40,14 @@ const getServiceInstanceSensitive = asyncHandler(async (req, res) => {
   res.status(HTTP_STATUS.OK).json(new ApiResponse(true, "Informations sensibles de l'instance", data));
 });
 
+const searchInstancesByIp = asyncHandler(async (req, res) => {
+  const result = await publicService.searchInstancesByIp(req.query.q);
+  res.set('Cache-Control', 'no-store');
+  res.status(HTTP_STATUS.OK).json(new ApiResponse(true, 'Recherche par adresse IP', result));
+});
+
 module.exports = {
+  searchInstancesByIp,
   getServiceInstanceSensitive,
   listServices,
   getServiceById,

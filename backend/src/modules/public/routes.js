@@ -1,7 +1,7 @@
 const { Router } = require('express');
 
 const controller = require('./controller');
-const { idParamSchema, instanceParamSchema } = require('./validator');
+const { idParamSchema, instanceParamSchema, ipSearchQuerySchema } = require('./validator');
 const validate = require('../../middlewares/validate');
 const authGuard = require('../../middlewares/auth');
 
@@ -35,5 +35,8 @@ router.get(
   validate(instanceParamSchema, 'params'),
   controller.getServiceInstanceSensitive
 );
+
+// Recherche d'instances par adresse IP (inventaire) : utilisateurs connectés.
+router.get('/search/ip', authGuard, validate(ipSearchQuerySchema, 'query'), controller.searchInstancesByIp);
 
 module.exports = router;

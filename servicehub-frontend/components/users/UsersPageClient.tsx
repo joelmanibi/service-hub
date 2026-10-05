@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import UsersHeader from "./UsersHeader";
 import UsersTable from "./UsersTable";
 import UserFormModal, { type UserFormValues } from "./UserFormModal";
 import ChangeRoleModal from "./ChangeRoleModal";
 import ConfirmActionModal, { type ConfirmActionType } from "./ConfirmActionModal";
 import BulkUserImportModal from "./BulkUserImportModal";
+import UsersSearchBar from "./UsersSearchBar";
 import { listPods, type Pod } from "@/services/pods.service";
 import Pagination from "@/components/common/Pagination";
 import type { ManagedUser, Role } from "./mockUsers";
@@ -56,6 +57,10 @@ export default function UsersPageClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pods, setPods] = useState<Pod[]>([]);
   const [podFilter, setPodFilter] = useState("");
+  const [search, setSearch] = useState("");
+  // Après le premier chargement, la liste reste affichée (atténuée) pendant
+  // les rechargements au lieu d'être remplacée par un spinner.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -65,6 +70,7 @@ export default function UsersPageClient() {
       const result = await listUsers({
         page,
         limit: PAGE_SIZE,
+        search: search || undefined,
         podId: podFilter ? Number(podFilter) : undefined,
         sortBy: "firstName",
         order: "ASC",
@@ -76,13 +82,20 @@ export default function UsersPageClient() {
       setLoadError(getApiErrorMessage(error, "Impossible de charger la liste des utilisateurs."));
     } finally {
       setIsLoading(false);
+      setHasLoadedOnce(true);
     }
   };
 
   useEffect(() => {
     loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, podFilter]);
+  }, [page, podFilter, search]);
+
+  // Nouvelle recherche : retour à la première page de résultats.
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
 
   // Référentiel des pods (formulaire, filtre, import en masse) — chargé
   // une fois ; une erreur ici n'empêche pas d'afficher les utilisateurs.
@@ -225,43 +238,53 @@ export default function UsersPageClient() {
         </div>
       )}
 
-      {isLoading ? (
+      {/* Barre d'outils toujours affichée (hors bloc de chargement) : le champ
+          de recherche garde le focus pendant le rechargement de la liste. */}
+      <div className="card border-0 shadow-sm mb-3">
+        <div className="card-body d-flex flex-wrap align-items-center gap-3">
+          <UsersSearchBar onSearchChange={handleSearchChange} isSearching={isLoading && hasLoadedOnce} />
+          <div className="d-flex align-items-center gap-2 ms-lg-auto">
+            <label htmlFor="users-pod-filter" className="small text-body-secondary text-nowrap mb-0">
+              Pod
+            </label>
+            <select
+              id="users-pod-filter"
+              className="form-select form-select-sm"
+              value={podFilter}
+              onChange={(event) => {
+                setPodFilter(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tous les pods</option>
+              {pods.map((pod) => (
+                <option key={pod.id} value={pod.id}>
+                  {pod.code}
+                  {pod.name !== pod.code ? ` — ${pod.name}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {isLoading && !hasLoadedOnce ? (
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Chargement...</span>
           </div>
         </div>
       ) : (
-        <>
-          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-            <p className="text-body-secondary small mb-0">
-              {total} utilisateur{total > 1 ? "s" : ""}
-              {podFilter ? " dans ce pod" : " au total"}
-            </p>
-            <div className="d-flex align-items-center gap-2">
-              <label htmlFor="users-pod-filter" className="small text-body-secondary text-nowrap mb-0">
-                Pod
-              </label>
-              <select
-                id="users-pod-filter"
-                className="form-select form-select-sm"
-                value={podFilter}
-                onChange={(event) => {
-                  setPodFilter(event.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">Tous les pods</option>
-                {pods.map((pod) => (
-                  <option key={pod.id} value={pod.id}>
-                    {pod.code}
-                    {pod.name !== pod.code ? ` — ${pod.name}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+        <div style={{ opacity: isLoading ? 0.6 : 1, transition: "opacity 0.15s ease" }} aria-busy={isLoading}>
+          <p className="text-body-secondary small mb-2">
+            {total} utilisateur{total > 1 ? "s" : ""}
+            {search ? ` correspondant à « ${search} »` : ""}
+            {podFilter ? " dans ce pod" : search ? "" : " au total"}
+          </p>
           <UsersTable
+            emptyMessage={
+              search || podFilter ? "Aucun utilisateur ne correspond à cette recherche." : "Aucun utilisateur."
+            }
             users={users}
             onEdit={(user) => setModal({ type: "edit", user })}
             onChangeRole={(user) => setModal({ type: "changeRole", user })}
@@ -271,7 +294,7 @@ export default function UsersPageClient() {
             onResetAccess={(user) => setModal({ type: "confirm", action: "resetAccess", user })}
           />
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-        </>
+        </div>
       )}
 
       {modal?.type === "create" && (

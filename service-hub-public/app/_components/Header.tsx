@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import IpSearchModal from "./IpSearchModal";
 import { usePathname, useRouter } from "next/navigation";
 import { logoutAction } from "../_actions/auth";
 import { useSession } from "./SessionProvider";
@@ -35,6 +36,7 @@ export default function Header() {
   const router = useRouter();
   const { user, openLogin } = useSession();
   const [isLoggingOut, startLogout] = useTransition();
+  const [isIpSearchOpen, setIsIpSearchOpen] = useState(false);
 
   const handleLogout = () => {
     startLogout(async () => {
@@ -81,6 +83,16 @@ export default function Header() {
         <div className="d-flex align-items-center gap-2 ms-auto ms-sm-3">
           {user ? (
             <>
+              {/* Recherche par IP : réservée aux utilisateurs connectés. */}
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                onClick={() => setIsIpSearchOpen(true)}
+                title="Rechercher une instance par adresse IP"
+              >
+                <i className="bi bi-hdd-network" aria-hidden="true" />
+                <span className="d-none d-lg-inline">Recherche IP</span>
+              </button>
               <span className="small text-body-secondary d-none d-md-inline-flex align-items-center gap-1 text-truncate">
                 <i className="bi bi-person-check text-success" aria-hidden="true" />
                 {user.email}
@@ -111,6 +123,8 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {user && isIpSearchOpen && <IpSearchModal onClose={() => setIsIpSearchOpen(false)} />}
     </header>
   );
 }

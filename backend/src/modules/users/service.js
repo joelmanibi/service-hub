@@ -36,15 +36,30 @@ const PODS_INCLUDE = {
 };
 
 async function list({ page, limit, search, podId, sortBy, order }) {
-  const where = search
-    ? {
-        [Op.or]: [
-          { firstName: { [Op.like]: `%${search}%` } },
-          { lastName: { [Op.like]: `%${search}%` } },
-          { email: { [Op.like]: `%${search}%` } },
-        ],
-      }
-    : {};
+  const where = {};
+
+  if (search) {
+    const term = `%${search}%`;
+    // Le login vit sur Credential : ids résolus à part (une condition
+    // `$credential.login$` casserait la sous-requête générée par Sequelize
+    // pour paginer avec l'include many-to-many `pods`).
+    const byLogin = await Credential.findAll({ where: { login: { [Op.like]: term } }, attributes: ['userId'] });
+
+    where[Op.or] = [
+      { firstName: { [Op.like]: term } },
+      { lastName: { [Op.like]: term } },
+      { email: { [Op.like]: term } },
+      { phone: { [Op.like]: term } },
+      // "Prénom Nom" ou "Nom Prénom" saisi en entier.
+      sequelize.where(sequelize.fn('CONCAT', sequelize.col('first_name'), ' ', sequelize.col('last_name')), {
+        [Op.like]: term,
+      }),
+      sequelize.where(sequelize.fn('CONCAT', sequelize.col('last_name'), ' ', sequelize.col('first_name')), {
+        [Op.like]: term,
+      }),
+      ...(byLogin.length > 0 ? [{ id: byLogin.map((credential) => credential.userId) }] : []),
+    ];
+  }
 
   // Filtre par pod en deux temps (ids des utilisateurs rattachés, puis
   // requête principale) : un `where` sur l'include `pods` ne renverrait,

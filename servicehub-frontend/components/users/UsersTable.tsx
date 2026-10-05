@@ -4,6 +4,7 @@ import StatusBadge from "./StatusBadge";
 
 type UsersTableProps = {
   users: ManagedUser[];
+  emptyMessage?: string;
   onEdit: (user: ManagedUser) => void;
   onChangeRole: (user: ManagedUser) => void;
   onToggleStatus: (user: ManagedUser) => void;
@@ -20,6 +21,7 @@ type UsersTableProps = {
  */
 export default function UsersTable({
   users,
+  emptyMessage = "Aucun utilisateur.",
   onEdit,
   onChangeRole,
   onToggleStatus,
@@ -144,7 +146,7 @@ export default function UsersTable({
             {users.length === 0 && (
               <tr>
                 <td colSpan={8} className="text-center text-body-secondary py-4">
-                  Aucun utilisateur.
+                  {emptyMessage}
                 </td>
               </tr>
             )}

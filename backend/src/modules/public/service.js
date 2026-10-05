@@ -1,3 +1,5 @@
+const { Op } = require('sequelize');
+
 const {
   Service,
   ServiceType,
@@ -304,6 +306,80 @@ async function getServiceInstanceSensitive(serviceId, instanceId) {
   };
 }
 
+const IP_SEARCH_MAX_RESULTS = 100;
+
+/**
+ * Recherche d'instances par adresse IP (réservée aux utilisateurs connectés,
+ * comme l'inventaire lui-même — route protégée par authGuard). `query` est
+ * une adresse IP complète ou partielle (ex. "10.25.2" ou "10.25.2.62"),
+ * IPv4 ou IPv6 : chiffres hexadécimaux, points et deux-points uniquement.
+ * Renvoie les instances dont un serveur de l'inventaire correspond, avec
+ * les serveurs trouvés (IP exacte en tête).
+ */
+async function searchInstancesByIp(query) {
+  const term = String(query ?? '').trim();
+
+  const inventaires = await Inventaire.findAll({
+    where: { ip: { [Op.like]: `%${term}%` } },
+    attributes: ['id', 'ip', 'nomServeur'],
+    include: [
+      {
+        model: Composant,
+        attributes: ['id', 'name'],
+        required: true,
+        include: [
+          {
+            model: Instance,
+            required: true,
+            attributes: ['id', 'code', 'name', 'serviceId'],
+            include: [
+              { model: Service, as: 'service', attributes: ['id', 'name'] },
+              { model: StatutInstance, as: 'statutInstance', attributes: ['id', 'name'] },
+              { model: Pod, as: 'pod', attributes: ['id', 'name'] },
+              { model: Client, as: 'client', attributes: ['id', 'name'] },
+            ],
+          },
+        ],
+      },
+    ],
+    order: [['ip', 'ASC']],
+    limit: IP_SEARCH_MAX_RESULTS + 1,
+  });
+
+  const truncated = inventaires.length > IP_SEARCH_MAX_RESULTS;
+  const byInstance = new Map();
+
+  for (const inventaire of inventaires.slice(0, IP_SEARCH_MAX_RESULTS)) {
+    const composant = inventaire.Composant;
+    const instance = composant.Instance;
+
+    if (!byInstance.has(instance.id)) {
+      byInstance.set(instance.id, {
+        id: instance.id,
+        code: instance.code,
+        name: instance.name,
+        service: toReference(instance.service),
+        statutInstance: toReference(instance.statutInstance),
+        pod: toReference(instance.pod),
+        client: toReference(instance.client),
+        exactMatch: false,
+        matches: [],
+      });
+    }
+
+    const entry = byInstance.get(instance.id);
+    const exact = inventaire.ip === term;
+    entry.exactMatch = entry.exactMatch || exact;
+    entry.matches.push({ ip: inventaire.ip, nomServeur: inventaire.nomServeur, composant: composant.name, exact });
+  }
+
+  const instances = Array.from(byInstance.values()).sort(
+    (a, b) => Number(b.exactMatch) - Number(a.exactMatch) || a.name.localeCompare(b.name)
+  );
+
+  return { query: term, total: instances.length, truncated, instances };
+}
+
 module.exports = {
   listServices,
   getServiceById,
@@ -311,4 +387,5 @@ module.exports = {
   listInstances,
   getServiceInstanceById,
   getServiceInstanceSensitive,
+  searchInstancesByIp,
 };
